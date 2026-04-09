@@ -1359,6 +1359,10 @@
     <div class="action-bar">
       <div class="action-bar-left">
         <button class="btn btn-ghost" onclick="clearAll()">↺ LIMPIAR TODO</button>
+        <label class="btn btn-ghost" style="cursor:pointer" title="Cargar Excel para restaurar datos">
+          ⬆ IMPORTAR EXCEL
+          <input type="file" accept=".xlsx" style="display:none" onchange="importExcel(this)">
+        </label>
       </div>
       <button class="btn btn-primary" onclick="goToStep(2)">CONTINUAR A EQUIPOS →</button>
     </div>
@@ -1397,10 +1401,6 @@
       <div class="action-bar-left">
         <button class="btn btn-ghost" onclick="goToStep(2)">← VOLVER</button>
         <button class="btn btn-ghost" onclick="exportExcel()" title="Descargar Excel con todo lo cargado">⬇ EXPORTAR EXCEL</button>
-        <label class="btn btn-ghost" style="cursor:pointer" title="Cargar Excel para restaurar datos">
-          ⬆ IMPORTAR EXCEL
-          <input type="file" accept=".xlsx" style="display:none" onchange="importExcel(this)">
-        </label>
       </div>
       <!-- PDF buttons generated dynamically -->
     </div>
