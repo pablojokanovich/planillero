@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   :root {
     --red: #E8000A;
@@ -1395,6 +1396,11 @@
     <div class="action-bar no-print" id="pdf-action-bar">
       <div class="action-bar-left">
         <button class="btn btn-ghost" onclick="goToStep(2)">← VOLVER</button>
+        <button class="btn btn-ghost" onclick="exportExcel()" title="Descargar Excel con todo lo cargado">⬇ EXPORTAR EXCEL</button>
+        <label class="btn btn-ghost" style="cursor:pointer" title="Cargar Excel para restaurar datos">
+          ⬆ IMPORTAR EXCEL
+          <input type="file" accept=".xlsx" style="display:none" onchange="importExcel(this)">
+        </label>
       </div>
       <!-- PDF buttons generated dynamically -->
     </div>
@@ -2076,10 +2082,140 @@ function buildPdfButtons() {
 }
 
 // ════════════════════════════════════════
-//  EXCEL EXPORT (SheetJS)
+//  EXCEL EXPORT / IMPORT (SheetJS)
 // ════════════════════════════════════════
 
+function exportExcel() {
+  if (!window.XLSX) { showToast('SheetJS no cargado aún, reintentá.'); return; }
+  const ev = getEventData();
+  const wb = XLSX.utils.book_new();
 
+  // META sheet — event data
+  const metaRows = [
+    ['CAMPO', 'VALOR'],
+    ['OS', ev.os],
+    ['LUGAR', ev.lugar],
+    ['ARMADO', ev.armado],
+    ['DESARME', ev.desarme],
+    ['LIDER', ev.lider],
+    ['NOTAS', ev.notas],
+    ['SALAS', salas.map(s => s.name).join(', ')],
+  ];
+  const metaWs = XLSX.utils.aoa_to_sheet(metaRows);
+  metaWs['!cols'] = [{ wch: 14 }, { wch: 40 }];
+  XLSX.utils.book_append_sheet(wb, metaWs, 'EVENTO');
+
+  // One sheet per sala+area combination that has data
+  for (const sala of salas) {
+    for (const [areaKey, area] of Object.entries(AREAS)) {
+      const items = getAreaItemsForSala(sala.id, areaKey);
+      if (!items.length) continue;
+
+      const rows = [['SALA', 'AREA', 'CATEGORIA', 'EQUIPO', 'CANTIDAD']];
+      for (const cat of items) {
+        for (const item of cat.items) {
+          rows.push([sala.name, area.label, cat.cat, item.name, item.qty]);
+        }
+      }
+
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{ wch: 14 }, { wch: 10 }, { wch: 22 }, { wch: 32 }, { wch: 10 }];
+      // Cap sheet name at 31 chars (Excel limit)
+      const sheetName = `${sala.name} ${area.label}`.slice(0, 31);
+      XLSX.utils.book_append_sheet(wb, ws, sheetName);
+    }
+  }
+
+  // Build filename using same format as PDF
+  const clean = s => (s || '').replace(/[^a-zA-Z0-9áéíóúÁÉÍÓÚñÑ]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  const fecha = (ev.armado || '').replace(/\//g, '-') || 'SinFecha';
+  const filename = `${clean(ev.os)||'SinOS'}_${clean(ev.lugar)||'SinLugar'}_${fecha}.xlsx`;
+
+  XLSX.writeFile(wb, filename);
+  showToast('✓ Excel descargado');
+}
+
+function importExcel(input) {
+  if (!input.files || !input.files[0]) return;
+  if (!window.XLSX) { showToast('SheetJS no cargado aún, reintentá.'); return; }
+
+  const file = input.files[0];
+  input.value = ''; // reset so same file can be reloaded
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+
+      // Restore event data from EVENTO sheet
+      const metaWs = wb.Sheets['EVENTO'];
+      if (metaWs) {
+        const rows = XLSX.utils.sheet_to_json(metaWs, { header: 1 });
+        const meta = {};
+        rows.slice(1).forEach(r => { if (r[0]) meta[r[0]] = r[1] || ''; });
+        if (meta.OS)      { document.getElementById('ev-os').value      = meta.OS; }
+        if (meta.LUGAR)   { document.getElementById('ev-lugar').value   = meta.LUGAR; }
+        if (meta.ARMADO)  { document.getElementById('ev-armado').value  = meta.ARMADO; }
+        if (meta.DESARME) { document.getElementById('ev-desarme').value = meta.DESARME; }
+        if (meta.LIDER)   { document.getElementById('ev-lider').value   = meta.LIDER; }
+        if (meta.NOTAS)   { document.getElementById('ev-notas').value   = meta.NOTAS; }
+        // Update header
+        const os = document.getElementById('ev-os').value;
+        const lugar = document.getElementById('ev-lugar').value;
+        const parts = [os, lugar].filter(Boolean);
+        document.getElementById('header-info').textContent = parts.length ? parts.join(' · ') : 'ORDEN INTERNA DE DEPÓSITO';
+
+        // Restore salas from metadata
+        if (meta.SALAS) {
+          const salaNames = meta.SALAS.split(',').map(s => s.trim()).filter(Boolean);
+          // Reset salas
+          quantities = {};
+          salas = [];
+          salaCounter = 0;
+          currentSalaId = null;
+          document.getElementById('sala-contents').innerHTML = '';
+          salaNames.forEach(name => addSala(name, false));
+          renderSalaTabs();
+          renderAllSalaContents();
+        }
+      }
+
+      // Restore quantities from data sheets
+      let restoredCount = 0;
+      for (const sheetName of wb.SheetNames) {
+        if (sheetName === 'EVENTO') continue;
+        const ws = wb.Sheets[sheetName];
+        const rows = XLSX.utils.sheet_to_json(ws, { header: 1 });
+        rows.slice(1).forEach(r => {
+          const [salaName, areaLabel, cat, equipo, qty] = r;
+          if (!salaName || !areaLabel || !equipo || !qty) return;
+
+          // Find sala id
+          const sala = salas.find(s => s.name === String(salaName));
+          if (!sala) return;
+
+          // Find area key
+          const areaKey = Object.keys(AREAS).find(k => AREAS[k].label === String(areaLabel));
+          if (!areaKey) return;
+
+          const key = `${sala.id}::${areaKey}::${cat}::${equipo}`;
+          quantities[key] = Number(qty);
+          restoredCount++;
+        });
+      }
+
+      restoreQuantities();
+      updateAllCounts();
+      saveState();
+      buildSummary();
+      showToast(`✓ Importado: ${restoredCount} equipo${restoredCount !== 1 ? 's' : ''} restaurado${restoredCount !== 1 ? 's' : ''}`);
+    } catch(err) {
+      console.error('Import error:', err);
+      showToast('⚠ Error al leer el Excel');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
 
 // ════════════════════════════════════════
 //  PDF PRINT
