@@ -22,10 +22,14 @@ create table if not exists public.pdf_documents (
   armado text,
   desarme text,
   lider text,
+  event_data jsonb,
   total_units integer not null default 0 check (total_units >= 0),
   file_size bigint not null default 0 check (file_size >= 0),
   created_at timestamptz not null default now()
 );
+
+-- Mantiene compatibles los proyectos creados con una versión anterior.
+alter table public.pdf_documents add column if not exists event_data jsonb;
 
 create index if not exists pdf_documents_created_at_idx on public.pdf_documents (created_at desc);
 create index if not exists pdf_documents_os_idx on public.pdf_documents (os);

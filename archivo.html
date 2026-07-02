@@ -60,6 +60,9 @@
   .delete-modal h2 { margin: 0 0 8px; font: 800 25px var(--display); letter-spacing: 1px; }
   .delete-modal p { color: var(--muted); line-height: 1.5; }
   .delete-target { margin: 18px 0; padding: 12px; background: #0d0d0d; border: 1px solid var(--line); color: var(--white); font: 11px var(--mono); overflow-wrap: anywhere; }
+  .delete-password-label { display: block; margin-bottom: 7px; color: var(--muted); font: 10px var(--mono); letter-spacing: 1px; }
+  .delete-password { width: 100%; margin-bottom: 7px; }
+  .delete-error { display: none; min-height: 18px; margin-bottom: 12px; color: #ff7272; font: 10px var(--mono); letter-spacing: 1px; }
   .modal-actions { display: flex; justify-content: flex-end; gap: 9px; }
   .modal-actions .cancel { background: transparent; border-color: var(--line); color: var(--white); }
   .modal-actions .confirm { background: var(--red); border-color: var(--red); }
@@ -107,6 +110,9 @@
     <h2 id="delete-title">¿ELIMINAR PDF?</h2>
     <p>Esta acción elimina el archivo online y su registro de la base de datos. No se puede deshacer.</p>
     <div class="delete-target" id="delete-target"></div>
+    <label class="delete-password-label" for="delete-password">CLAVE DE ELIMINACIÓN</label>
+    <input class="delete-password" id="delete-password" type="password" placeholder="Ingresá la clave" autocomplete="off">
+    <div class="delete-error" id="delete-error" role="alert">CLAVE INCORRECTA</div>
     <div class="modal-actions">
       <button class="cancel" id="delete-cancel" type="button">CANCELAR</button>
       <button class="confirm" id="delete-confirm" type="button">ELIMINAR DEFINITIVAMENTE</button>
@@ -125,6 +131,9 @@ const emptyEl = document.getElementById('empty');
 const tableWrapEl = document.getElementById('table-wrap');
 const deleteModalEl = document.getElementById('delete-modal');
 const deleteConfirmEl = document.getElementById('delete-confirm');
+const deletePasswordEl = document.getElementById('delete-password');
+const deleteErrorEl = document.getElementById('delete-error');
+const DELETE_PASSWORD = 'cr2026';
 let pendingDelete = null;
 
 function setStatus(message, error = false) {
@@ -195,9 +204,12 @@ function render() {
 function openDeleteModal(doc) {
   pendingDelete = doc;
   document.getElementById('delete-target').textContent = `${doc.os || 'Sin OS'} · ${doc.lugar || 'Sin lugar'} · ${doc.filename}`;
+  deletePasswordEl.value = '';
+  deleteErrorEl.style.display = 'none';
   deleteConfirmEl.disabled = false;
   deleteConfirmEl.textContent = 'ELIMINAR DEFINITIVAMENTE';
   deleteModalEl.classList.add('open');
+  setTimeout(() => deletePasswordEl.focus(), 0);
 }
 
 function closeDeleteModal() {
@@ -209,6 +221,12 @@ function closeDeleteModal() {
 async function deleteDocument() {
   const doc = pendingDelete;
   if (!doc) return;
+  if (deletePasswordEl.value !== DELETE_PASSWORD) {
+    deleteErrorEl.style.display = 'block';
+    deletePasswordEl.select();
+    return;
+  }
+  deleteErrorEl.style.display = 'none';
   deleteConfirmEl.disabled = true;
   deleteConfirmEl.textContent = 'ELIMINANDO…';
   setStatus(`Eliminando ${doc.filename}…`);
@@ -288,6 +306,8 @@ areaEl.addEventListener('change', render);
 document.getElementById('refresh').addEventListener('click', loadDocuments);
 document.getElementById('delete-cancel').addEventListener('click', closeDeleteModal);
 deleteConfirmEl.addEventListener('click', deleteDocument);
+deletePasswordEl.addEventListener('input', () => { deleteErrorEl.style.display = 'none'; });
+deletePasswordEl.addEventListener('keydown', event => { if (event.key === 'Enter') deleteDocument(); });
 deleteModalEl.addEventListener('click', event => { if (event.target === deleteModalEl) closeDeleteModal(); });
 loadDocuments();
 </script>

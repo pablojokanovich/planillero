@@ -135,9 +135,26 @@
     letter-spacing: 1px;
   }
   .archive-access .btn { text-decoration: none; white-space: nowrap; }
+  .archive-access-actions { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+  .duplicate-status {
+    min-height: 20px; margin: 4px 0 14px; color: var(--gray-400);
+    font-family: var(--font-mono); font-size: 11px;
+  }
+  .duplicate-list { display: grid; gap: 10px; max-height: 54vh; overflow-y: auto; }
+  .duplicate-event {
+    width: 100%; padding: 14px 16px; color: var(--white); background: var(--gray-900);
+    border: 1px solid var(--gray-700); border-left: 3px solid var(--red); text-align: left; cursor: pointer;
+  }
+  .duplicate-event:hover { background: var(--gray-800); border-color: var(--gray-500); border-left-color: var(--red); }
+  .duplicate-event-title { display: block; font-family: var(--font-display); font-size: 18px; font-weight: 800; letter-spacing: 1px; }
+  .duplicate-event-meta { display: block; margin-top: 5px; color: var(--gray-400); font-family: var(--font-mono); font-size: 10px; line-height: 1.5; }
+  .duplicate-event-badge { display: inline-block; margin-top: 8px; padding: 3px 6px; color: #9be7b5; background: rgba(49,195,107,.1); border: 1px solid rgba(49,195,107,.35); font-family: var(--font-mono); font-size: 9px; }
+  .duplicate-event-badge.partial { color: #ffd18a; background: rgba(255,180,70,.08); border-color: rgba(255,180,70,.35); }
 
   @media (max-width: 620px) {
     .archive-access { align-items: stretch; flex-direction: column; }
+    .archive-access-actions { display: grid; }
     .archive-access .btn { text-align: center; }
   }
 
@@ -1418,7 +1435,10 @@
       <strong>ARCHIVO DE PDF ONLINE</strong>
       <span>CONSULTÁ LAS ÓRDENES GUARDADAS EN LA BASE DE DATOS</span>
     </div>
-    <a class="btn btn-primary" href="archivo.html">VER ARCHIVO DE PDF →</a>
+    <div class="archive-access-actions">
+      <button class="btn btn-ghost" type="button" onclick="openDuplicateModal()">DUPLICAR EVENTO</button>
+      <a class="btn btn-primary" href="archivo.html">VER ARCHIVO DE PDF →</a>
+    </div>
   </div>
 
   <!-- STEPS -->
@@ -1595,6 +1615,17 @@
   </div>
 </div>
 
+<!-- DUPLICATE EVENT MODAL -->
+<div class="modal-overlay" id="modal-duplicate">
+  <div class="modal-box admin-wide" style="max-width:760px">
+    <button class="modal-close" onclick="closeModal('modal-duplicate')">&#215;</button>
+    <div class="modal-title">DUPLICAR EVENTO</div>
+    <div class="modal-subtitle">// ELEGÍ UNA PLANILLA GUARDADA PARA COPIARLA Y MODIFICARLA</div>
+    <div class="duplicate-status" id="duplicate-status">Cargando eventos guardados...</div>
+    <div class="duplicate-list" id="duplicate-list"></div>
+  </div>
+</div>
+
 <!-- PDF PAGES (hidden, shown only on print) -->
 <div class="pdf-pages" id="pdf-pages"></div>
 
@@ -1688,6 +1719,11 @@ let currentArea = 'cctv';
 let salaCounter = 0;
 let quantities = {};
 let observations = {};
+let eventId = createEventId();
+
+function createEventId() {
+  return window.crypto?.randomUUID?.() || `event-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 // ════════════════════════════════════════
 //  INIT
@@ -1696,12 +1732,14 @@ let observations = {};
 window.addEventListener('DOMContentLoaded', async () => {
   const onlineInventoryLoaded = await loadOnlineInventory();
   if (!onlineInventoryLoaded) loadCustomInventory();
-  loadState();
+  const recovered = loadState();
   if (salas.length === 0) addSala('SALA A', false);
   renderSalaTabs();
   renderAllSalaContents();
   restoreQuantities();
+  if (currentSalaId) switchAreaInSala(currentSalaId, currentArea);
   updateFloatSummary();
+  if (recovered) showToast('Planilla recuperada automáticamente.');
 });
 
 // ════════════════════════════════════════
@@ -2066,6 +2104,8 @@ function updateFloatSummary() {
 
 function saveState() {
   const state = {
+    version: 2,
+    eventId,
     ev: {
       os: document.getElementById('ev-os').value,
       lugar: document.getElementById('ev-lugar').value,
@@ -2074,13 +2114,55 @@ function saveState() {
       lider: document.getElementById('ev-lider').value,
       notas: document.getElementById('ev-notas').value,
     },
-    salas, salaCounter, quantities, observations
+    salas, salaCounter, currentSalaId, currentArea, quantities, observations
   };
   try { localStorage.setItem('cr_deposito', JSON.stringify(state)); } catch(e) {}
 }
 
 function loadState() {
-  // Always start fresh — no auto-restore of previous event data
+  try {
+    const raw = localStorage.getItem('cr_deposito');
+    if (!raw) return false;
+    const state = JSON.parse(raw);
+    if (!state || !Array.isArray(state.salas)) return false;
+    const ev = state.ev || {};
+    ['os','lugar','armado','desarme','lider','notas'].forEach(field => {
+      const input = document.getElementById(`ev-${field}`);
+      if (input) input.value = ev[field] || '';
+    });
+    salas = state.salas.filter(s => s && s.id && s.name);
+    salaCounter = Number(state.salaCounter) || salas.length;
+    quantities = state.quantities && typeof state.quantities === 'object' ? state.quantities : {};
+    observations = state.observations && typeof state.observations === 'object' ? state.observations : {};
+    currentSalaId = salas.some(s => s.id === state.currentSalaId) ? state.currentSalaId : (salas[0]?.id || null);
+    currentArea = AREAS[state.currentArea] ? state.currentArea : 'cctv';
+    eventId = state.eventId || createEventId();
+    updateHeaderInfo();
+    return Boolean(salas.length || Object.values(ev).some(Boolean) || Object.keys(quantities).length);
+  } catch (error) {
+    console.warn('No se pudo recuperar la planilla local:', error);
+    return false;
+  }
+}
+
+function getEventSnapshot() {
+  return {
+    version: 2,
+    event_id: eventId,
+    saved_at: new Date().toISOString(),
+    ev: {
+      os: document.getElementById('ev-os').value,
+      lugar: document.getElementById('ev-lugar').value,
+      armado: document.getElementById('ev-armado').value,
+      desarme: document.getElementById('ev-desarme').value,
+      lider: document.getElementById('ev-lider').value,
+      notas: document.getElementById('ev-notas').value,
+    },
+    salas: JSON.parse(JSON.stringify(salas)),
+    salaCounter,
+    quantities: { ...quantities },
+    observations: { ...observations },
+  };
 }
 
 function restoreQuantities() {
@@ -2106,7 +2188,7 @@ function restoreQuantities() {
 
 function clearAll() {
   if (!confirm('¿Limpiar TODOS los datos del evento?')) return;
-  quantities = {}; observations = {}; salas = []; salaCounter = 0; currentSalaId = null;
+  quantities = {}; observations = {}; salas = []; salaCounter = 0; currentSalaId = null; eventId = createEventId();
   try { localStorage.removeItem('cr_deposito'); } catch(e) {}
   document.querySelectorAll('input[type="text"], input[type="date"]').forEach(i => i.value = '');
   document.getElementById('header-info').textContent = 'LISTADO OPERATIVO';
@@ -2116,6 +2198,13 @@ function clearAll() {
   renderAllSalaContents();
   updateFloatSummary();
   showToast('Datos limpiados correctamente.');
+}
+
+function updateHeaderInfo() {
+  const os = document.getElementById('ev-os').value;
+  const lugar = document.getElementById('ev-lugar').value;
+  const parts = [os, lugar].filter(Boolean);
+  document.getElementById('header-info').textContent = parts.length ? parts.join(' · ') : 'LISTADO OPERATIVO';
 }
 
 function clearCurrentSalaArea() {
@@ -2433,7 +2522,8 @@ function printSalaArea(salaId, areaKey) {
   const totalUnits = items.reduce((total, cat) => total + cat.items.reduce((sum, item) => sum + Number(item.qty || 0), 0), 0);
   showPrintAndRestore(pdfEl, filename, {
     os: ev.os, lugar: ev.lugar, sala: sala.name, area: AREAS[areaKey].label,
-    armado: ev.armado, desarme: ev.desarme, lider: ev.lider, total_units: totalUnits
+    armado: ev.armado, desarme: ev.desarme, lider: ev.lider, total_units: totalUnits,
+    event_data: getEventSnapshot()
   });
 }
 
@@ -2450,7 +2540,8 @@ function printAllSalasForArea(areaKey) {
   const totalUnits = pages.reduce((total, page) => total + page.items.reduce((catTotal, cat) => catTotal + cat.items.reduce((sum, item) => sum + Number(item.qty || 0), 0), 0), 0);
   showPrintAndRestore(pdfEl, filename, {
     os: ev.os, lugar: ev.lugar, sala: pages.map(p => p.sala.name).join(', '), area: AREAS[areaKey].label,
-    armado: ev.armado, desarme: ev.desarme, lider: ev.lider, total_units: totalUnits
+    armado: ev.armado, desarme: ev.desarme, lider: ev.lider, total_units: totalUnits,
+    event_data: getEventSnapshot()
   });
 }
 
@@ -2728,12 +2819,7 @@ function showToast(msg) {
 
 // Update header info on input
 ['ev-os','ev-lugar'].forEach(id => {
-  document.getElementById(id).addEventListener('input', () => {
-    const os = document.getElementById('ev-os').value;
-    const lugar = document.getElementById('ev-lugar').value;
-    const parts = [os, lugar].filter(Boolean);
-    document.getElementById('header-info').textContent = parts.length ? parts.join(' · ') : 'LISTADO OPERATIVO';
-  });
+  document.getElementById(id).addEventListener('input', updateHeaderInfo);
 });
 
 // ════════════════════════════════════════
@@ -3157,6 +3243,111 @@ async function resetInventoryToDefault() {
 // ════════════════════════════════════════
 //  MODAL HELPERS
 // ════════════════════════════════════════
+
+function duplicateHeaders() {
+  return { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
+}
+
+async function openDuplicateModal() {
+  openModal('modal-duplicate');
+  const status = document.getElementById('duplicate-status');
+  const list = document.getElementById('duplicate-list');
+  status.textContent = 'Cargando eventos guardados...';
+  list.replaceChildren();
+  try {
+    const baseFields = 'id,os,lugar,sala,area,armado,desarme,lider,created_at';
+    let hasSnapshots = true;
+    let response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?select=${baseFields},event_data&order=created_at.desc&limit=300`, { headers: duplicateHeaders() });
+    if (!response.ok) {
+      hasSnapshots = false;
+      response = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?select=${baseFields}&order=created_at.desc&limit=300`, { headers: duplicateHeaders() });
+    }
+    if (!response.ok) throw new Error(await response.text());
+    const records = await response.json();
+    const unique = new Map();
+    records.forEach(record => {
+      const snapshot = normalizeEventSnapshot(record.event_data);
+      const key = snapshot?.event_id || [record.os, record.lugar, record.armado, record.lider].join('|');
+      if (!unique.has(key)) unique.set(key, { ...record, event_data: snapshot });
+    });
+    const events = [...unique.values()];
+    status.textContent = events.length
+      ? `${events.length} evento${events.length === 1 ? '' : 's'} disponible${events.length === 1 ? '' : 's'}.`
+      : 'Todavía no hay planillas guardadas para duplicar.';
+    if (!hasSnapshots && events.length) status.textContent += ' Ejecutá la migración para copiar también los equipos.';
+    events.forEach(record => list.appendChild(buildDuplicateEventButton(record)));
+  } catch (error) {
+    console.error('No se pudieron cargar eventos para duplicar:', error);
+    status.textContent = 'No se pudo consultar la base de datos. Revisá la conexión con Supabase.';
+  }
+}
+
+function normalizeEventSnapshot(value) {
+  if (!value) return null;
+  if (typeof value === 'object') return value;
+  try { return JSON.parse(value); } catch (error) { return null; }
+}
+
+function buildDuplicateEventButton(record) {
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'duplicate-event';
+  const title = document.createElement('span');
+  title.className = 'duplicate-event-title';
+  title.textContent = `OS ${record.os || 'SIN NÚMERO'} · ${record.lugar || 'SIN LUGAR'}`;
+  const meta = document.createElement('span');
+  meta.className = 'duplicate-event-meta';
+  const created = record.created_at ? new Intl.DateTimeFormat('es-AR', { dateStyle: 'short' }).format(new Date(record.created_at)) : 'sin fecha';
+  meta.textContent = `${record.armado || 'Armado sin fecha'} · ${record.lider || 'Sin responsable'} · guardada ${created}`;
+  const badge = document.createElement('span');
+  badge.className = `duplicate-event-badge${record.event_data ? '' : ' partial'}`;
+  badge.textContent = record.event_data ? 'COPIA COMPLETA: DATOS + EQUIPOS' : 'COPIA DE DATOS GENERALES';
+  button.append(title, meta, badge);
+  button.addEventListener('click', () => duplicateStoredEvent(record));
+  return button;
+}
+
+function duplicateStoredEvent(record) {
+  const snapshot = normalizeEventSnapshot(record.event_data);
+  const ev = snapshot?.ev || {
+    os: record.os || '', lugar: record.lugar || '', armado: rawStoredDate(record.armado),
+    desarme: rawStoredDate(record.desarme), lider: record.lider || '', notas: ''
+  };
+  ['os','lugar','armado','desarme','lider','notas'].forEach(field => {
+    document.getElementById(`ev-${field}`).value = ev[field] || '';
+  });
+
+  if (snapshot && Array.isArray(snapshot.salas) && snapshot.salas.length) {
+    salas = JSON.parse(JSON.stringify(snapshot.salas));
+    salaCounter = Number(snapshot.salaCounter) || salas.length;
+    quantities = snapshot.quantities && typeof snapshot.quantities === 'object' ? { ...snapshot.quantities } : {};
+    observations = snapshot.observations && typeof snapshot.observations === 'object' ? { ...snapshot.observations } : {};
+  } else {
+    const names = String(record.sala || 'SALA A').split(',').map(name => name.trim()).filter(Boolean);
+    salas = (names.length ? names : ['SALA A']).map((name, index) => ({ id: `sala-${index + 1}`, name }));
+    salaCounter = salas.length;
+    quantities = {};
+    observations = {};
+  }
+
+  eventId = createEventId();
+  currentSalaId = salas[0].id;
+  currentArea = 'cctv';
+  document.getElementById('sala-contents').replaceChildren();
+  renderSalaTabs();
+  renderAllSalaContents();
+  restoreQuantities();
+  updateHeaderInfo();
+  saveState();
+  closeModal('modal-duplicate');
+  goToStep(1);
+  showToast('Evento duplicado. Ya podés modificarlo.');
+}
+
+function rawStoredDate(value) {
+  const text = String(value || '').trim();
+  return text === '—' ? '' : text.replace(/\//g, '-');
+}
 
 function openModal(id) { document.getElementById(id).classList.add('open'); }
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
