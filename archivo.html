@@ -48,9 +48,21 @@
   .area { display: inline-block; padding: 4px 7px; background: rgba(232,0,10,.12); border: 1px solid rgba(232,0,10,.45); color: #ff767b; font: 10px var(--mono); }
   .pdf-link { display: inline-block; color: var(--white); background: var(--red); padding: 8px 11px; text-decoration: none; font: 700 10px var(--mono); letter-spacing: 1px; white-space: nowrap; }
   .pdf-link:hover { background: var(--red-dark); }
+  .file-actions { display: flex; align-items: center; gap: 7px; }
+  .delete-btn { min-height: auto; padding: 8px 10px; background: transparent; border-color: #653236; color: #ff858a; font-size: 10px; white-space: nowrap; }
+  .delete-btn:hover { background: #6d1117; border-color: var(--red); color: var(--white); }
   .muted { color: var(--muted); }
   .empty { display: none; padding: 55px 20px; border: 1px dashed var(--line); text-align: center; color: var(--muted); }
   .empty strong { display: block; margin-bottom: 8px; color: var(--white); font: 700 20px var(--display); letter-spacing: 1px; }
+  .modal-backdrop { display: none; position: fixed; inset: 0; z-index: 20; align-items: center; justify-content: center; padding: 20px; background: rgba(0,0,0,.78); }
+  .modal-backdrop.open { display: flex; }
+  .delete-modal { width: min(480px, 100%); padding: 25px; background: #141414; border: 1px solid #444; border-top: 3px solid var(--red); box-shadow: 0 25px 80px rgba(0,0,0,.6); }
+  .delete-modal h2 { margin: 0 0 8px; font: 800 25px var(--display); letter-spacing: 1px; }
+  .delete-modal p { color: var(--muted); line-height: 1.5; }
+  .delete-target { margin: 18px 0; padding: 12px; background: #0d0d0d; border: 1px solid var(--line); color: var(--white); font: 11px var(--mono); overflow-wrap: anywhere; }
+  .modal-actions { display: flex; justify-content: flex-end; gap: 9px; }
+  .modal-actions .cancel { background: transparent; border-color: var(--line); color: var(--white); }
+  .modal-actions .confirm { background: var(--red); border-color: var(--red); }
   @media (max-width: 720px) {
     header { padding: 0 16px; } .brand small { display: none; }
     main { padding: 30px 16px 50px; }
@@ -90,6 +102,17 @@
   </div>
   <div class="empty" id="empty"><strong>NO HAY DOCUMENTOS</strong><span>Generá un PDF desde el planillero o cambiá los filtros.</span></div>
 </main>
+<div class="modal-backdrop" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
+  <div class="delete-modal">
+    <h2 id="delete-title">¿ELIMINAR PDF?</h2>
+    <p>Esta acción elimina el archivo online y su registro de la base de datos. No se puede deshacer.</p>
+    <div class="delete-target" id="delete-target"></div>
+    <div class="modal-actions">
+      <button class="cancel" id="delete-cancel" type="button">CANCELAR</button>
+      <button class="confirm" id="delete-confirm" type="button">ELIMINAR DEFINITIVAMENTE</button>
+    </div>
+  </div>
+</div>
 <script>
 const { SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET, SUPABASE_TABLE } = window.PDF_ARCHIVE_CONFIG;
 let documents = [];
@@ -100,6 +123,9 @@ const searchEl = document.getElementById('search');
 const areaEl = document.getElementById('area-filter');
 const emptyEl = document.getElementById('empty');
 const tableWrapEl = document.getElementById('table-wrap');
+const deleteModalEl = document.getElementById('delete-modal');
+const deleteConfirmEl = document.getElementById('delete-confirm');
+let pendingDelete = null;
 
 function setStatus(message, error = false) {
   statusEl.textContent = message;
@@ -118,7 +144,7 @@ function formatCreated(value) {
 
 function appendCell(row, text, className = '') {
   const cell = document.createElement('td');
-  cell.textContent = text || '—';
+  cell.textContent = text === '' ? '' : (text || '—');
   if (className) cell.className = className;
   row.appendChild(cell);
   return cell;
@@ -147,11 +173,16 @@ function render() {
     appendCell(row, doc.lider);
     appendCell(row, String(doc.total_units || 0));
     const action = appendCell(row, '');
+    const actions = document.createElement('div'); actions.className = 'file-actions';
     const link = document.createElement('a');
     link.className = 'pdf-link'; link.target = '_blank'; link.rel = 'noopener';
     link.href = doc.public_url || publicUrl(doc.storage_path);
     link.textContent = 'VER PDF ↗';
-    action.appendChild(link);
+    const deleteButton = document.createElement('button');
+    deleteButton.className = 'delete-btn'; deleteButton.type = 'button'; deleteButton.textContent = 'ELIMINAR';
+    deleteButton.addEventListener('click', () => openDeleteModal(doc));
+    actions.append(link, deleteButton);
+    action.appendChild(actions);
     listEl.appendChild(row);
   }
 
@@ -159,6 +190,57 @@ function render() {
   emptyEl.style.display = isEmpty ? 'block' : 'none';
   tableWrapEl.style.display = isEmpty ? 'none' : 'block';
   setStatus(`${filtered.length} de ${documents.length} documento${documents.length === 1 ? '' : 's'}`);
+}
+
+function openDeleteModal(doc) {
+  pendingDelete = doc;
+  document.getElementById('delete-target').textContent = `${doc.os || 'Sin OS'} · ${doc.lugar || 'Sin lugar'} · ${doc.filename}`;
+  deleteConfirmEl.disabled = false;
+  deleteConfirmEl.textContent = 'ELIMINAR DEFINITIVAMENTE';
+  deleteModalEl.classList.add('open');
+}
+
+function closeDeleteModal() {
+  if (deleteConfirmEl.disabled) return;
+  pendingDelete = null;
+  deleteModalEl.classList.remove('open');
+}
+
+async function deleteDocument() {
+  const doc = pendingDelete;
+  if (!doc) return;
+  deleteConfirmEl.disabled = true;
+  deleteConfirmEl.textContent = 'ELIMINANDO…';
+  setStatus(`Eliminando ${doc.filename}…`);
+
+  try {
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+    };
+    const storageRes = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}`, {
+      method: 'DELETE', headers, body: JSON.stringify({ prefixes: [doc.storage_path] })
+    });
+    if (!storageRes.ok) throw new Error(`Storage: ${await storageRes.text()}`);
+
+    const metadataRes = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${encodeURIComponent(doc.id)}`, {
+      method: 'DELETE', headers: { ...headers, 'Prefer': 'return=minimal' }
+    });
+    if (!metadataRes.ok) throw new Error(`Base de datos: ${await metadataRes.text()}`);
+
+    documents = documents.filter(item => item.id !== doc.id);
+    pendingDelete = null;
+    deleteModalEl.classList.remove('open');
+    updateStats();
+    render();
+    setStatus(`PDF eliminado: ${doc.filename}`);
+  } catch (error) {
+    console.error('No se pudo eliminar el PDF:', error);
+    deleteConfirmEl.disabled = false;
+    deleteConfirmEl.textContent = 'REINTENTAR ELIMINACIÓN';
+    setStatus('No se pudo eliminar. Verificá que las políticas de borrado estén activadas.', true);
+  }
 }
 
 function updateStats() {
@@ -204,6 +286,9 @@ async function loadDocuments() {
 searchEl.addEventListener('input', render);
 areaEl.addEventListener('change', render);
 document.getElementById('refresh').addEventListener('click', loadDocuments);
+document.getElementById('delete-cancel').addEventListener('click', closeDeleteModal);
+deleteConfirmEl.addEventListener('click', deleteDocument);
+deleteModalEl.addEventListener('click', event => { if (event.target === deleteModalEl) closeDeleteModal(); });
 loadDocuments();
 </script>
 </body>
