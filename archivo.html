@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Archivo PDF — Congress Rental</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23E8000A'/%3E%3Cpath d='M8 5h12l5 5v17H8z' fill='%23fff'/%3E%3Cpath d='M20 5v6h5' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E">
+<script src="supabase-config.js"></script>
+<style>
+  :root {
+    --red: #e8000a; --red-dark: #b30008; --black: #0a0a0a; --panel: #141414;
+    --line: #2d2d2d; --muted: #929292; --white: #fff; --green: #31c36b;
+    --display: "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
+    --mono: "Cascadia Mono", Consolas, monospace;
+    --body: Inter, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--black); color: var(--white); font-family: var(--body); }
+  body::before { content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .2; background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px); background-size: 32px 32px; }
+  header { position: sticky; top: 0; z-index: 5; height: 66px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; gap: 20px; background: rgba(10,10,10,.96); border-bottom: 2px solid var(--red); }
+  .brand { display: flex; align-items: center; gap: 12px; font-family: var(--display); font-size: 20px; font-weight: 800; letter-spacing: 2px; }
+  .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; background: var(--red); font-family: var(--mono); font-size: 11px; }
+  .brand small { color: var(--muted); font-family: var(--mono); font-size: 10px; font-weight: 400; letter-spacing: 1px; }
+  .back { color: #ccc; text-decoration: none; border: 1px solid var(--line); padding: 9px 12px; font: 10px var(--mono); letter-spacing: 1px; }
+  .back:hover { border-color: var(--red); color: var(--white); }
+  main { position: relative; max-width: 1180px; margin: 0 auto; padding: 42px 24px 70px; }
+  .eyebrow { margin: 0 0 8px; color: var(--red); font: 11px var(--mono); letter-spacing: 3px; }
+  h1 { margin: 0; font: 800 clamp(34px, 6vw, 62px)/.95 var(--display); letter-spacing: 2px; text-transform: uppercase; }
+  .lead { max-width: 650px; margin: 14px 0 32px; color: var(--muted); line-height: 1.55; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 22px; }
+  .stat { background: var(--panel); border: 1px solid var(--line); border-top: 2px solid var(--red); padding: 18px; }
+  .stat span { display: block; color: var(--muted); font: 10px var(--mono); letter-spacing: 1px; text-transform: uppercase; }
+  .stat strong { display: block; margin-top: 6px; font: 700 28px var(--display); }
+  .toolbar { display: grid; grid-template-columns: minmax(240px, 1fr) 190px auto; gap: 10px; margin-bottom: 18px; }
+  input, select, button { min-height: 44px; border: 1px solid var(--line); background: #111; color: var(--white); padding: 0 13px; font: 12px var(--mono); outline: none; }
+  input:focus, select:focus { border-color: var(--red); }
+  button { cursor: pointer; background: var(--red); border-color: var(--red); font-weight: 700; letter-spacing: 1px; }
+  button:hover { background: var(--red-dark); }
+  .status { min-height: 22px; margin: 0 0 10px; color: var(--muted); font: 11px var(--mono); }
+  .status.error { color: #ff7272; }
+  .table-wrap { overflow-x: auto; border: 1px solid var(--line); background: var(--panel); }
+  table { width: 100%; border-collapse: collapse; min-width: 900px; }
+  th { padding: 11px 14px; color: var(--muted); background: #101010; border-bottom: 1px solid var(--line); text-align: left; font: 10px var(--mono); letter-spacing: 1px; }
+  td { padding: 14px; border-bottom: 1px solid #242424; font-size: 13px; vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: #191919; }
+  .os { color: var(--white); font: 700 14px var(--mono); }
+  .area { display: inline-block; padding: 4px 7px; background: rgba(232,0,10,.12); border: 1px solid rgba(232,0,10,.45); color: #ff767b; font: 10px var(--mono); }
+  .pdf-link { display: inline-block; color: var(--white); background: var(--red); padding: 8px 11px; text-decoration: none; font: 700 10px var(--mono); letter-spacing: 1px; white-space: nowrap; }
+  .pdf-link:hover { background: var(--red-dark); }
+  .muted { color: var(--muted); }
+  .empty { display: none; padding: 55px 20px; border: 1px dashed var(--line); text-align: center; color: var(--muted); }
+  .empty strong { display: block; margin-bottom: 8px; color: var(--white); font: 700 20px var(--display); letter-spacing: 1px; }
+  @media (max-width: 720px) {
+    header { padding: 0 16px; } .brand small { display: none; }
+    main { padding: 30px 16px 50px; }
+    .stats { grid-template-columns: 1fr; }
+    .toolbar { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="brand-mark">CR</span><span>ARCHIVO PDF <small>// DEPÓSITO</small></span></div>
+  <a class="back" href="index.html">← VOLVER AL PLANILLERO</a>
+</header>
+<main>
+  <p class="eyebrow">// DOCUMENTOS EN LA NUBE</p>
+  <h1>Órdenes guardadas</h1>
+  <p class="lead">Cada PDF generado al imprimir aparece aquí automáticamente. Podés buscarlo por OS, lugar, sala, área o responsable.</p>
+
+  <section class="stats" aria-label="Estadísticas">
+    <div class="stat"><span>PDF guardados</span><strong id="stat-total">—</strong></div>
+    <div class="stat"><span>Este mes</span><strong id="stat-month">—</strong></div>
+    <div class="stat"><span>Unidades preparadas</span><strong id="stat-units">—</strong></div>
+  </section>
+
+  <section class="toolbar" aria-label="Filtros">
+    <input id="search" type="search" placeholder="Buscar por OS, lugar, sala o líder..." autocomplete="off">
+    <select id="area-filter" aria-label="Filtrar por área"><option value="">TODAS LAS ÁREAS</option></select>
+    <button id="refresh" type="button">↻ ACTUALIZAR</button>
+  </section>
+  <p class="status" id="status" role="status">Conectando con el archivo online…</p>
+
+  <div class="table-wrap" id="table-wrap">
+    <table>
+      <thead><tr><th>FECHA</th><th>OS</th><th>LUGAR / SALA</th><th>ÁREA</th><th>ARMADO</th><th>RESPONSABLE</th><th>UNID.</th><th>ARCHIVO</th></tr></thead>
+      <tbody id="pdf-list"></tbody>
+    </table>
+  </div>
+  <div class="empty" id="empty"><strong>NO HAY DOCUMENTOS</strong><span>Generá un PDF desde el planillero o cambiá los filtros.</span></div>
+</main>
+<script>
+const { SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET, SUPABASE_TABLE } = window.PDF_ARCHIVE_CONFIG;
+let documents = [];
+
+const listEl = document.getElementById('pdf-list');
+const statusEl = document.getElementById('status');
+const searchEl = document.getElementById('search');
+const areaEl = document.getElementById('area-filter');
+const emptyEl = document.getElementById('empty');
+const tableWrapEl = document.getElementById('table-wrap');
+
+function setStatus(message, error = false) {
+  statusEl.textContent = message;
+  statusEl.classList.toggle('error', error);
+}
+
+function publicUrl(path) {
+  const encoded = String(path || '').split('/').map(encodeURIComponent).join('/');
+  return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${encoded}`;
+}
+
+function formatCreated(value) {
+  if (!value) return '—';
+  return new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+}
+
+function appendCell(row, text, className = '') {
+  const cell = document.createElement('td');
+  cell.textContent = text || '—';
+  if (className) cell.className = className;
+  row.appendChild(cell);
+  return cell;
+}
+
+function render() {
+  const query = searchEl.value.trim().toLowerCase();
+  const area = areaEl.value;
+  const filtered = documents.filter(doc => {
+    const haystack = [doc.os, doc.lugar, doc.sala, doc.area, doc.lider, doc.filename].join(' ').toLowerCase();
+    return (!query || haystack.includes(query)) && (!area || doc.area === area);
+  });
+
+  listEl.replaceChildren();
+  for (const doc of filtered) {
+    const row = document.createElement('tr');
+    appendCell(row, formatCreated(doc.created_at), 'muted');
+    appendCell(row, doc.os, 'os');
+    const location = appendCell(row, '');
+    const place = document.createElement('div'); place.textContent = doc.lugar || '—';
+    const room = document.createElement('div'); room.className = 'muted'; room.textContent = doc.sala || '—';
+    location.append(place, room);
+    const areaCell = appendCell(row, '');
+    const badge = document.createElement('span'); badge.className = 'area'; badge.textContent = doc.area || '—'; areaCell.appendChild(badge);
+    appendCell(row, doc.armado, 'muted');
+    appendCell(row, doc.lider);
+    appendCell(row, String(doc.total_units || 0));
+    const action = appendCell(row, '');
+    const link = document.createElement('a');
+    link.className = 'pdf-link'; link.target = '_blank'; link.rel = 'noopener';
+    link.href = doc.public_url || publicUrl(doc.storage_path);
+    link.textContent = 'VER PDF ↗';
+    action.appendChild(link);
+    listEl.appendChild(row);
+  }
+
+  const isEmpty = filtered.length === 0;
+  emptyEl.style.display = isEmpty ? 'block' : 'none';
+  tableWrapEl.style.display = isEmpty ? 'none' : 'block';
+  setStatus(`${filtered.length} de ${documents.length} documento${documents.length === 1 ? '' : 's'}`);
+}
+
+function updateStats() {
+  const now = new Date();
+  const thisMonth = documents.filter(doc => {
+    const date = new Date(doc.created_at);
+    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  }).length;
+  document.getElementById('stat-total').textContent = documents.length;
+  document.getElementById('stat-month').textContent = thisMonth;
+  document.getElementById('stat-units').textContent = documents.reduce((sum, doc) => sum + Number(doc.total_units || 0), 0);
+
+  const selected = areaEl.value;
+  const areas = [...new Set(documents.map(doc => doc.area).filter(Boolean))].sort();
+  areaEl.replaceChildren(new Option('TODAS LAS ÁREAS', ''));
+  areas.forEach(area => areaEl.add(new Option(area, area)));
+  areaEl.value = areas.includes(selected) ? selected : '';
+}
+
+async function loadDocuments() {
+  setStatus('Actualizando archivo online…');
+  document.getElementById('refresh').disabled = true;
+  try {
+    const select = 'id,filename,storage_path,public_url,os,lugar,sala,area,armado,desarme,lider,total_units,file_size,created_at';
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?select=${select}&order=created_at.desc&limit=1000`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    if (!res.ok) throw new Error(await res.text());
+    documents = await res.json();
+    updateStats();
+    render();
+  } catch (error) {
+    console.error('No se pudo cargar el archivo PDF:', error);
+    documents = [];
+    updateStats();
+    render();
+    setStatus('No se pudo abrir el archivo. Ejecutá supabase-setup.sql en el proyecto Supabase.', true);
+  } finally {
+    document.getElementById('refresh').disabled = false;
+  }
+}
+
+searchEl.addEventListener('input', render);
+areaEl.addEventListener('change', render);
+document.getElementById('refresh').addEventListener('click', loadDocuments);
+loadDocuments();
+</script>
+</body>
+</html>

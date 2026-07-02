@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="supabase-config.js"></script>
 <style>
   :root {
     --red: #E8000A;
@@ -1104,6 +1105,19 @@
   }
   .btn-admin-trigger:hover { border-color: var(--red); color: var(--white); background: var(--red-glow); }
 
+  .btn-pdf-archive {
+    border: 1px solid var(--gray-700);
+    color: var(--gray-300);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 9px 12px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .btn-pdf-archive:hover { border-color: var(--red); color: var(--white); background: var(--red-glow); }
+
   /* ─── MODAL OVERLAY ─── */
   .modal-overlay {
     display: none;
@@ -1350,6 +1364,7 @@
   </div>
   <div style="display:flex;align-items:center;gap:16px">
     <div class="header-right" id="header-info">ORDEN INTERNA DE DEPÓSITO</div>
+    <a class="btn-pdf-archive" href="archivo.html" target="_blank" rel="noopener">PDF ONLINE</a>
     <button class="btn-admin-trigger" onclick="openAdminLogin()" title="Panel de administración">&#9881;</button>
   </div>
 </header>
@@ -2338,7 +2353,11 @@ function printSalaArea(salaId, areaKey) {
   const pdfEl = document.getElementById('pdf-pages');
   pdfEl.innerHTML = buildPdfPage(ev, AREAS[areaKey], items, sala.name);
   const filename = buildPdfFilename(ev, AREAS[areaKey].label, sala.name);
-  showPrintAndRestore(pdfEl, filename);
+  const totalUnits = items.reduce((total, cat) => total + cat.items.reduce((sum, item) => sum + Number(item.qty || 0), 0), 0);
+  showPrintAndRestore(pdfEl, filename, {
+    os: ev.os, lugar: ev.lugar, sala: sala.name, area: AREAS[areaKey].label,
+    armado: ev.armado, desarme: ev.desarme, lider: ev.lider, total_units: totalUnits
+  });
 }
 
 function printAllSalasForArea(areaKey) {
@@ -2351,25 +2370,41 @@ function printAllSalasForArea(areaKey) {
   pdfEl.innerHTML = pages.map(({ sala, items }) => buildPdfPage(ev, AREAS[areaKey], items, sala.name)).join('');
   const salaNames = pages.map(p => p.sala.name).join('-');
   const filename = buildPdfFilename(ev, AREAS[areaKey].label, salaNames);
-  showPrintAndRestore(pdfEl, filename);
+  const totalUnits = pages.reduce((total, page) => total + page.items.reduce((catTotal, cat) => catTotal + cat.items.reduce((sum, item) => sum + Number(item.qty || 0), 0), 0), 0);
+  showPrintAndRestore(pdfEl, filename, {
+    os: ev.os, lugar: ev.lugar, sala: pages.map(p => p.sala.name).join(', '), area: AREAS[areaKey].label,
+    armado: ev.armado, desarme: ev.desarme, lider: ev.lider, total_units: totalUnits
+  });
 }
 
 // ════════════════════════════════════════
 //  SUPABASE CONFIG
 // ════════════════════════════════════════
 
-const SUPABASE_URL = 'https://ibsnzvisrbgqeaclfitd.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imlic256dmlzcmJncWVhY2xmaXRkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2NTE5ODUsImV4cCI6MjA4OTIyNzk4NX0.bGV8U5tqHxvl5hphfOu1Ds7c7u01EHevsqTPJm6UBVM';
-const SUPABASE_BUCKET = 'planillas';
+const { SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET, SUPABASE_TABLE } = window.PDF_ARCHIVE_CONFIG;
+
+function buildUniquePdfPath(filename) {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const unique = (window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`);
+  return `${year}/${month}/${unique}_${filename}.pdf`;
+}
+
+function getPublicPdfUrl(path) {
+  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
+  return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${encodedPath}`;
+}
 
 async function uploadPdfToSupabase(pdfBlob, filename) {
-  const path = `${filename}.pdf`;
+  const path = buildUniquePdfPath(filename);
   const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${path}`, {
     method: 'POST',
     headers: {
+      'apikey': SUPABASE_KEY,
       'Authorization': `Bearer ${SUPABASE_KEY}`,
       'Content-Type': 'application/pdf',
-      'x-upsert': 'true',
+      'x-upsert': 'false',
     },
     body: pdfBlob,
   });
@@ -2377,10 +2412,24 @@ async function uploadPdfToSupabase(pdfBlob, filename) {
     const err = await res.text();
     throw new Error(err);
   }
-  return path;
+  return { path, publicUrl: getPublicPdfUrl(path) };
 }
 
-function showPrintAndRestore(pdfEl, filename) {
+async function savePdfMetadata(metadata) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify(metadata),
+  });
+  if (!res.ok) throw new Error(await res.text());
+}
+
+function showPrintAndRestore(pdfEl, filename, metadata) {
   const prevTitle = document.title;
   if (filename) document.title = filename;
   pdfEl.style.display = 'block';
@@ -2388,7 +2437,7 @@ function showPrintAndRestore(pdfEl, filename) {
   document.querySelector('.main-wrapper').style.display = 'none';
 
   // Generate and upload PDF to Supabase in background
-  generateAndUploadPdf(pdfEl, filename);
+  generateAndUploadPdf(pdfEl, filename, metadata);
 
   window.print();
   document.querySelector('.site-header').style.display = '';
@@ -2397,7 +2446,7 @@ function showPrintAndRestore(pdfEl, filename) {
   document.title = prevTitle;
 }
 
-async function generateAndUploadPdf(pdfEl, filename) {
+async function generateAndUploadPdf(pdfEl, filename, metadata) {
   try {
     // Hide toast during capture so it doesn't appear in the PDF
     const toastEl = document.getElementById('toast');
@@ -2524,9 +2573,16 @@ async function generateAndUploadPdf(pdfEl, filename) {
     }
 
     const pdfBlob = pdf.output('blob');
-    await uploadPdfToSupabase(pdfBlob, filename);
+    const uploaded = await uploadPdfToSupabase(pdfBlob, filename);
+    await savePdfMetadata({
+      ...metadata,
+      filename: `${filename}.pdf`,
+      storage_path: uploaded.path,
+      public_url: uploaded.publicUrl,
+      file_size: pdfBlob.size,
+    });
     toastEl.style.display = prevDisplay;
-    showToast('✓ PDF guardado en base de datos');
+    showToast('✓ PDF guardado y disponible online');
   } catch (e) {
     console.error('Supabase upload error:', e);
     const toastEl2 = document.getElementById('toast');
