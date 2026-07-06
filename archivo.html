@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Archivo PDF — Congress Rental</title>
+<title>PLANILLAS Y CITACIONES CONGRESS RENTAL</title>
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23E8000A'/%3E%3Cpath d='M8 5h12l5 5v17H8z' fill='%23fff'/%3E%3Cpath d='M20 5v6h5' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E">
 <script src="supabase-config.js"></script>
 <style>
@@ -18,9 +18,9 @@
   body { margin: 0; min-height: 100vh; background: var(--black); color: var(--white); font-family: var(--body); }
   body::before { content: ""; position: fixed; inset: 0; pointer-events: none; opacity: .2; background-image: linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px); background-size: 32px 32px; }
   header { position: sticky; top: 0; z-index: 5; height: 66px; padding: 0 30px; display: flex; align-items: center; justify-content: space-between; gap: 20px; background: rgba(10,10,10,.96); border-bottom: 2px solid var(--red); }
-  .brand { display: flex; align-items: center; gap: 12px; font-family: var(--display); font-size: 20px; font-weight: 800; letter-spacing: 2px; }
+  .brand { display: flex; align-items: center; gap: 12px; font-family: var(--display); font-size: 16px; line-height: 1.05; font-weight: 800; letter-spacing: 1.4px; }
   .brand-mark { width: 32px; height: 32px; display: grid; place-items: center; background: var(--red); font-family: var(--mono); font-size: 11px; }
-  .brand small { color: var(--muted); font-family: var(--mono); font-size: 10px; font-weight: 400; letter-spacing: 1px; }
+  .brand small { display: block; margin-top: 3px; color: var(--muted); font-family: var(--mono); font-size: 9px; font-weight: 700; letter-spacing: 1px; }
   .back { color: #ccc; text-decoration: none; border: 1px solid var(--line); padding: 9px 12px; font: 10px var(--mono); letter-spacing: 1px; }
   .back:hover { border-color: var(--red); color: var(--white); }
   .main-nav { display: flex; align-items: center; gap: 5px; padding: 4px; background: #101010; border: 1px solid #3a3a3a; box-shadow: 0 5px 18px rgba(0,0,0,.32); }
@@ -42,14 +42,28 @@
   button:hover { background: var(--red-dark); }
   .status { min-height: 22px; margin: 0 0 10px; color: var(--muted); font: 11px var(--mono); }
   .status.error { color: #ff7272; }
-  .table-wrap { overflow-x: auto; border: 1px solid var(--line); background: var(--panel); }
-  table { width: 100%; border-collapse: collapse; min-width: 900px; }
+  .grouped-archive { display: grid; gap: 22px; }
+  .area-group { overflow: hidden; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--red); }
+  .area-group > summary { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 19px; cursor: pointer; background: #111; list-style: none; }
+  .area-group > summary::-webkit-details-marker, .order-group > summary::-webkit-details-marker { display: none; }
+  .area-group > summary::after { content: '+'; color: var(--red); font: 700 22px var(--mono); }
+  .area-group[open] > summary::after { content: '−'; }
+  .area-group-title { font: 800 23px var(--display); letter-spacing: 1.5px; text-transform: uppercase; }
+  .area-group-meta { margin-left: auto; color: var(--muted); font: 10px var(--mono); letter-spacing: 1px; text-align: right; }
+  .order-groups { display: grid; gap: 12px; padding: 14px; border-top: 1px solid var(--line); }
+  .order-group { overflow: hidden; border: 1px solid #303030; background: #0d0d0d; }
+  .order-group > summary { display: flex; align-items: center; gap: 12px; padding: 13px 15px; cursor: pointer; list-style: none; background: #181818; }
+  .order-group > summary::before { content: '›'; color: var(--red); font: 700 20px var(--mono); transition: transform .15s; }
+  .order-group[open] > summary::before { transform: rotate(90deg); }
+  .order-label { color: var(--muted); font: 9px var(--mono); letter-spacing: 1px; }
+  .order-number { color: var(--white); font: 700 15px var(--mono); }
+  .order-count { margin-left: auto; padding: 4px 7px; color: #ff858a; border: 1px solid #653236; font: 9px var(--mono); letter-spacing: 1px; }
+  .order-table-wrap { overflow-x: auto; border-top: 1px solid #303030; }
+  table { width: 100%; border-collapse: collapse; min-width: 760px; }
   th { padding: 11px 14px; color: var(--muted); background: #101010; border-bottom: 1px solid var(--line); text-align: left; font: 10px var(--mono); letter-spacing: 1px; }
   td { padding: 14px; border-bottom: 1px solid #242424; font-size: 13px; vertical-align: middle; }
   tr:last-child td { border-bottom: 0; }
   tbody tr:hover { background: #191919; }
-  .os { color: var(--white); font: 700 14px var(--mono); }
-  .area { display: inline-block; padding: 4px 7px; background: rgba(232,0,10,.12); border: 1px solid rgba(232,0,10,.45); color: #ff767b; font: 10px var(--mono); }
   .pdf-link { display: inline-block; color: var(--white); background: var(--red); padding: 8px 11px; text-decoration: none; font: 700 10px var(--mono); letter-spacing: 1px; white-space: nowrap; }
   .pdf-link:hover { background: var(--red-dark); }
   .file-actions { display: flex; align-items: center; gap: 7px; }
@@ -71,18 +85,22 @@
   .modal-actions .cancel { background: transparent; border-color: var(--line); color: var(--white); }
   .modal-actions .confirm { background: var(--red); border-color: var(--red); }
   @media (max-width: 720px) {
-    header { height: auto; min-height: 66px; padding: 10px 16px; flex-wrap: wrap; } .brand small { display: none; }
+    header { height: auto; min-height: 66px; padding: 10px 16px; flex-wrap: wrap; }
     .main-nav { order: 3; width: 100%; overflow-x: auto; }
     .main-nav a { flex: 1; padding: 10px 9px; font-size: 10px; }
     main { padding: 30px 16px 50px; }
     .stats { grid-template-columns: 1fr; }
     .toolbar { grid-template-columns: 1fr; }
+    .area-group > summary { align-items: flex-start; padding: 14px; }
+    .area-group-title { font-size: 19px; }
+    .area-group-meta { font-size: 9px; }
+    .order-groups { padding: 9px; }
   }
 </style>
 </head>
 <body>
 <header>
-  <div class="brand"><span class="brand-mark">CR</span><span>ARCHIVO PDF <small>// DEPÓSITO</small></span></div>
+  <div class="brand"><span class="brand-mark">CR</span><span>PLANILLAS Y CITACIONES <small>CONGRESS RENTAL</small></span></div>
   <nav class="main-nav" aria-label="Navegación principal">
     <a href="index.html">Inicio</a>
     <a class="active" href="archivo.html">Planillas Hechas</a>
@@ -107,12 +125,7 @@
   </section>
   <p class="status" id="status" role="status">Conectando con el archivo online…</p>
 
-  <div class="table-wrap" id="table-wrap">
-    <table>
-      <thead><tr><th>FECHA</th><th>OS</th><th>LUGAR / SALA</th><th>ÁREA</th><th>ARMADO</th><th>RESPONSABLE</th><th>UNID.</th><th>ARCHIVO</th></tr></thead>
-      <tbody id="pdf-list"></tbody>
-    </table>
-  </div>
+  <div class="grouped-archive" id="grouped-archive"></div>
   <div class="empty" id="empty"><strong>NO HAY DOCUMENTOS</strong><span>Generá un PDF desde el planillero o cambiá los filtros.</span></div>
 </main>
 <div class="modal-backdrop" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
@@ -133,12 +146,11 @@
 const { SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET, SUPABASE_TABLE } = window.PDF_ARCHIVE_CONFIG;
 let documents = [];
 
-const listEl = document.getElementById('pdf-list');
+const listEl = document.getElementById('grouped-archive');
 const statusEl = document.getElementById('status');
 const searchEl = document.getElementById('search');
 const areaEl = document.getElementById('area-filter');
 const emptyEl = document.getElementById('empty');
-const tableWrapEl = document.getElementById('table-wrap');
 const deleteModalEl = document.getElementById('delete-modal');
 const deleteConfirmEl = document.getElementById('delete-confirm');
 const deletePasswordEl = document.getElementById('delete-password');
@@ -169,6 +181,30 @@ function appendCell(row, text, className = '') {
   return cell;
 }
 
+function createDocumentRow(doc) {
+  const row = document.createElement('tr');
+  appendCell(row, formatCreated(doc.created_at), 'muted');
+  const location = appendCell(row, '');
+  const place = document.createElement('div'); place.textContent = doc.lugar || '—';
+  const room = document.createElement('div'); room.className = 'muted'; room.textContent = doc.sala || '—';
+  location.append(place, room);
+  appendCell(row, doc.armado, 'muted');
+  appendCell(row, doc.lider);
+  appendCell(row, String(doc.total_units || 0));
+  const action = appendCell(row, '');
+  const actions = document.createElement('div'); actions.className = 'file-actions';
+  const link = document.createElement('a');
+  link.className = 'pdf-link'; link.target = '_blank'; link.rel = 'noopener';
+  link.href = doc.public_url || publicUrl(doc.storage_path);
+  link.textContent = 'VER PDF ↗';
+  const deleteButton = document.createElement('button');
+  deleteButton.className = 'delete-btn'; deleteButton.type = 'button'; deleteButton.textContent = 'ELIMINAR';
+  deleteButton.addEventListener('click', () => openDeleteModal(doc));
+  actions.append(link, deleteButton);
+  action.appendChild(actions);
+  return row;
+}
+
 function render() {
   const query = searchEl.value.trim().toLowerCase();
   const area = areaEl.value;
@@ -177,38 +213,72 @@ function render() {
     return (!query || haystack.includes(query)) && (!area || doc.area === area);
   });
 
+  const areas = new Map();
+  filtered.forEach(doc => {
+    const areaLabel = String(doc.area || 'SIN ÁREA').trim() || 'SIN ÁREA';
+    const areaKey = areaLabel.toLocaleUpperCase('es-AR');
+    if (!areas.has(areaKey)) areas.set(areaKey, { label: areaLabel, orders: new Map(), total: 0 });
+    const areaGroup = areas.get(areaKey);
+    const orderLabel = String(doc.os || 'SIN NÚMERO DE ORDEN').trim() || 'SIN NÚMERO DE ORDEN';
+    const orderKey = orderLabel.toLocaleUpperCase('es-AR');
+    if (!areaGroup.orders.has(orderKey)) areaGroup.orders.set(orderKey, { label: orderLabel, documents: [] });
+    areaGroup.orders.get(orderKey).documents.push(doc);
+    areaGroup.total += 1;
+  });
+
   listEl.replaceChildren();
-  for (const doc of filtered) {
-    const row = document.createElement('tr');
-    appendCell(row, formatCreated(doc.created_at), 'muted');
-    appendCell(row, doc.os, 'os');
-    const location = appendCell(row, '');
-    const place = document.createElement('div'); place.textContent = doc.lugar || '—';
-    const room = document.createElement('div'); room.className = 'muted'; room.textContent = doc.sala || '—';
-    location.append(place, room);
-    const areaCell = appendCell(row, '');
-    const badge = document.createElement('span'); badge.className = 'area'; badge.textContent = doc.area || '—'; areaCell.appendChild(badge);
-    appendCell(row, doc.armado, 'muted');
-    appendCell(row, doc.lider);
-    appendCell(row, String(doc.total_units || 0));
-    const action = appendCell(row, '');
-    const actions = document.createElement('div'); actions.className = 'file-actions';
-    const link = document.createElement('a');
-    link.className = 'pdf-link'; link.target = '_blank'; link.rel = 'noopener';
-    link.href = doc.public_url || publicUrl(doc.storage_path);
-    link.textContent = 'VER PDF ↗';
-    const deleteButton = document.createElement('button');
-    deleteButton.className = 'delete-btn'; deleteButton.type = 'button'; deleteButton.textContent = 'ELIMINAR';
-    deleteButton.addEventListener('click', () => openDeleteModal(doc));
-    actions.append(link, deleteButton);
-    action.appendChild(actions);
-    listEl.appendChild(row);
-  }
+  const sortedAreas = [...areas.values()].sort((a, b) => a.label.localeCompare(b.label, 'es-AR', { numeric: true }));
+
+  sortedAreas.forEach(areaGroup => {
+    const areaDetails = document.createElement('details');
+    areaDetails.className = 'area-group';
+    areaDetails.open = true;
+    const areaSummary = document.createElement('summary');
+    const areaTitle = document.createElement('span'); areaTitle.className = 'area-group-title'; areaTitle.textContent = areaGroup.label;
+    const areaMeta = document.createElement('span'); areaMeta.className = 'area-group-meta';
+    areaMeta.textContent = `${areaGroup.orders.size} ${areaGroup.orders.size === 1 ? 'orden' : 'órdenes'} · ${areaGroup.total} PDF`;
+    areaSummary.append(areaTitle, areaMeta);
+    const orderContainer = document.createElement('div'); orderContainer.className = 'order-groups';
+
+    const sortedOrders = [...areaGroup.orders.values()].sort((a, b) => a.label.localeCompare(b.label, 'es-AR', { numeric: true }));
+    sortedOrders.forEach(orderGroup => {
+      const orderDetails = document.createElement('details');
+      orderDetails.className = 'order-group';
+      orderDetails.open = true;
+      const orderSummary = document.createElement('summary');
+      const orderName = document.createElement('span');
+      const orderLabel = document.createElement('span'); orderLabel.className = 'order-label'; orderLabel.textContent = 'NÚMERO DE ORDEN';
+      const orderNumber = document.createElement('span'); orderNumber.className = 'order-number'; orderNumber.textContent = orderGroup.label;
+      orderName.append(orderLabel, document.createElement('br'), orderNumber);
+      const orderCount = document.createElement('span'); orderCount.className = 'order-count';
+      orderCount.textContent = `${orderGroup.documents.length} PDF`;
+      orderSummary.append(orderName, orderCount);
+
+      const tableWrap = document.createElement('div'); tableWrap.className = 'order-table-wrap';
+      const table = document.createElement('table');
+      const head = document.createElement('thead');
+      const headRow = document.createElement('tr');
+      ['FECHA', 'LUGAR / SALA', 'ARMADO', 'RESPONSABLE', 'UNID.', 'ARCHIVO'].forEach(label => {
+        const th = document.createElement('th'); th.textContent = label; headRow.appendChild(th);
+      });
+      head.appendChild(headRow);
+      const body = document.createElement('tbody');
+      orderGroup.documents.forEach(doc => body.appendChild(createDocumentRow(doc)));
+      table.append(head, body);
+      tableWrap.appendChild(table);
+      orderDetails.append(orderSummary, tableWrap);
+      orderContainer.appendChild(orderDetails);
+    });
+
+    areaDetails.append(areaSummary, orderContainer);
+    listEl.appendChild(areaDetails);
+  });
 
   const isEmpty = filtered.length === 0;
   emptyEl.style.display = isEmpty ? 'block' : 'none';
-  tableWrapEl.style.display = isEmpty ? 'none' : 'block';
-  setStatus(`${filtered.length} de ${documents.length} documento${documents.length === 1 ? '' : 's'}`);
+  listEl.style.display = isEmpty ? 'none' : 'grid';
+  const orderTotal = [...areas.values()].reduce((sum, group) => sum + group.orders.size, 0);
+  setStatus(`${filtered.length} de ${documents.length} documentos · ${areas.size} área${areas.size === 1 ? '' : 's'} · ${orderTotal} ${orderTotal === 1 ? 'orden' : 'órdenes'}`);
 }
 
 function openDeleteModal(doc) {
