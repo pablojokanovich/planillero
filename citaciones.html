@@ -785,6 +785,43 @@
     document.getElementById('new-telefono').value='';
   };
 
+  function buildExcelData(orden, lugar, selectedValues = Object.values(selected), eventDays = days) {
+    const headers = ['N° de Orden','Lugar','Sala','Mes','Fecha','Día','Horario','Tipo','Vianda','Nombre y Apellido','Puesto'];
+    const rows = [headers];
+
+    selectedValues.forEach(sel => {
+      const {fl, puesto, sala, days: selDays} = sel;
+      const flDays = eventDays.filter(day => selDays.has(day.date));
+
+      flDays.forEach(day => {
+        const date = new Date(day.date+'T12:00:00');
+        const mesStr = date.toLocaleDateString('es-AR',{month:'long',year:'numeric'});
+        const mesCapital = mesStr.charAt(0).toUpperCase()+mesStr.slice(1);
+        const fecha = date.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
+        const dia = date.toLocaleDateString('es-AR',{weekday:'long'});
+        const diaCapital = dia.charAt(0).toUpperCase()+dia.slice(1);
+        const tipo = day.tipo==='evento'?'Evento':day.tipo==='pruebas'?'Armado y Pruebas':day.tipo==='armado_evento'?'Armado y Evento':day.tipo==='evento_desarme'?'Evento y Desarme':day.tipo==='desarme'?'Desarme':'Armado';
+        const horario = day.horario ? `${parseInt(day.horario.split(':')[0])}:${day.horario.split(':')[1]} hs` : '';
+
+        rows.push([
+          orden,
+          lugar,
+          sala||'',
+          mesCapital,
+          fecha,
+          diaCapital,
+          horario,
+          tipo,
+          day.vianda ? 'Sí' : 'No',
+          fl.nombre,
+          puesto||''
+        ]);
+      });
+    });
+
+    return {headers, rows};
+  }
+
   // ---- GENERATE ----
   document.getElementById('btn-generar-all').onclick=()=>{
     const evento=document.getElementById('f-evento').value.trim();
@@ -948,36 +985,7 @@
       const orden   = document.getElementById('f-orden').value.trim();
       const lugar   = document.getElementById('f-lugar').value.trim();
 
-      const headers = ['N° de Orden','Lugar','Sala','Mes','Fechas','Nombre y Apellido','Puesto'];
-      const rows = [headers];
-
-      Object.values(selected).forEach(sel => {
-        const {fl, puesto, sala, days: selDays} = sel;
-        const flDays = days.filter(d=>selDays.has(d.date));
-        if (!flDays.length) return;
-        const firstDay = flDays[0];
-        const lastDay  = flDays[flDays.length-1];
-
-        // Mes from first day
-        const mesStr = new Date(firstDay.date+'T12:00:00').toLocaleDateString('es-AR',{month:'long',year:'numeric'});
-        const mesCapital = mesStr.charAt(0).toUpperCase()+mesStr.slice(1);
-
-        // Fechas format: 21/04 al 25/04
-        const fmt2 = d => { const dt=new Date(d+'T12:00:00'); return `${String(dt.getDate()).padStart(2,'0')}/${String(dt.getMonth()+1).padStart(2,'0')}`; };
-        const fechasStr = firstDay.date===lastDay.date
-          ? fmt2(firstDay.date)
-          : `${fmt2(firstDay.date)} al ${fmt2(lastDay.date)}`;
-
-        rows.push([
-          orden,
-          lugar,
-          sala||'',
-          mesCapital,
-          fechasStr,
-          fl.nombre,
-          puesto||''
-        ]);
-      });
+      const {headers, rows} = buildExcelData(orden, lugar);
 
       const ws = XLSX.utils.aoa_to_sheet(rows);
 
@@ -987,7 +995,11 @@
         {wch:28}, // Lugar
         {wch:12}, // Sala
         {wch:18}, // Mes
-        {wch:16}, // Fechas
+        {wch:12}, // Fecha
+        {wch:14}, // Día
+        {wch:12}, // Horario
+        {wch:22}, // Tipo
+        {wch:10}, // Vianda
         {wch:26}, // Nombre
         {wch:28}  // Puesto
       ];
