@@ -15,6 +15,8 @@ Si la configuración inicial ya se había ejecutado antes de incorporar el botó
 
 Para compartir las categorías y equipos entre todos los navegadores, ejecutar una vez `supabase-enable-online-inventory.sql`. Al abrir el planillero por primera vez, la app copia automáticamente el inventario incluido en `index.html` a las tablas online. Desde ese momento, las altas y bajas del panel administrativo se guardan en Supabase; `localStorage` queda sólo como caché de respaldo sin conexión.
 
+Para compartir el listado de Citaciones, ejecutar una vez `supabase-enable-freelancers.sql`. Al abrir `citaciones.html`, la app copia automáticamente los freelancers incluidos en el HTML si la tabla está vacía. Las altas y eliminaciones se sincronizan online y el navegador conserva una copia local de respaldo.
+
 ## Seguridad
 
 La configuración incluida permite lectura y carga anónimas porque el planillero actual no tiene usuarios. Es apropiada para una herramienta interna con URL controlada, pero no para documentos confidenciales publicados en Internet. Para restringirla correctamente hay que incorporar Supabase Auth y cambiar las políticas de `anon` a `authenticated`.
