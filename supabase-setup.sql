@@ -129,8 +129,14 @@ create table if not exists public.freelancers (
   nombre text not null check (length(trim(nombre)) > 0),
   area text not null check (area in ('CCTV', 'Sonido', 'Iluminacion', 'Video', 'Traduccion', 'Computers', 'Otros')),
   telefono text not null default '',
+  alimentacion text not null default 'comun' check (alimentacion in ('comun', 'vegetariano', 'sin_tacc')),
   created_at timestamptz not null default now()
 );
+
+alter table public.freelancers add column if not exists alimentacion text not null default 'comun';
+alter table public.freelancers drop constraint if exists freelancers_alimentacion_check;
+alter table public.freelancers add constraint freelancers_alimentacion_check
+check (alimentacion in ('comun', 'vegetariano', 'sin_tacc'));
 
 create index if not exists freelancers_area_nombre_idx on public.freelancers (area, nombre);
 

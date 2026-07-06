@@ -17,6 +17,8 @@ Para compartir las categorías y equipos entre todos los navegadores, ejecutar u
 
 Para compartir el listado de Citaciones, ejecutar una vez `supabase-enable-freelancers.sql`. Al abrir `citaciones.html`, la app copia automáticamente los freelancers incluidos en el HTML si la tabla está vacía. Las altas y eliminaciones se sincronizan online y el navegador conserva una copia local de respaldo.
 
+Si la tabla de freelancers fue creada antes de incorporar el tipo de alimentación, ejecutar una vez `supabase-enable-freelancer-food.sql`. Esto permite guardar online las opciones Común, Vegetariano y Sin TACC, además de las ediciones de cada operador.
+
 ## Seguridad
 
 La configuración incluida permite lectura y carga anónimas porque el planillero actual no tiene usuarios. Es apropiada para una herramienta interna con URL controlada, pero no para documentos confidenciales publicados en Internet. Para restringirla correctamente hay que incorporar Supabase Auth y cambiar las políticas de `anon` a `authenticated`.

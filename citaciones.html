@@ -56,6 +56,9 @@
     .fl-avatar { width: 34px; height: 34px; border-radius: 3px; display: flex; align-items: center; justify-content: center; font-size: 15px; background: #2a0a0a; flex-shrink: 0; }
     .fl-name { font-weight: 700; font-size: 14px; flex: 1; min-width: 120px; }
     .fl-phone { font-size: 11px; color: var(--muted); }
+    .fl-food { display:inline-block; margin-top:4px; padding:2px 6px; border:1px solid #555; color:#bbb; font:700 9px 'Barlow Condensed',sans-serif; letter-spacing:.7px; text-transform:uppercase; }
+    .fl-food.vegetariano { color:#72d38d; border-color:#326b43; background:rgba(34,197,94,.08); }
+    .fl-food.sin_tacc { color:#ffd178; border-color:#80652d; background:rgba(240,165,0,.08); }
     .fl-card-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; margin-left: auto; }
 
     .fl-checkbox { width: 20px; height: 20px; border-radius: 3px; border: 2px solid var(--border); background: transparent; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: all .15s; }
@@ -71,6 +74,8 @@
 
     .btn-del { padding: 5px 9px; border-radius: 3px; border: 1px solid var(--border); cursor: pointer; background: transparent; color: var(--muted); font-size: 12px; transition: all .15s; }
     .btn-del:hover { background: #2d0a0a; border-color: #cc1a1a55; color: #ef4444; }
+    .btn-edit { padding:6px 9px; border-radius:3px; border:1px solid #555; cursor:pointer; background:#222; color:#ddd; font:700 10px 'Barlow Condensed',sans-serif; letter-spacing:.7px; text-transform:uppercase; transition:all .15s; }
+    .btn-edit:hover { border-color:var(--red); color:#fff; background:#321010; }
 
     /* DAY TOGGLES inside fl-card */
     .fl-days-row { display: flex; flex-wrap: wrap; gap: 6px; padding: 8px 14px 12px; border-top: 1px solid var(--border); }
@@ -93,8 +98,8 @@
 
     .field { margin-bottom: 14px; }
     .field label { display: block; font-size: 10px; font-weight: 700; color: var(--muted); letter-spacing: 1px; margin-bottom: 6px; text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif; }
-    .field input { width: 100%; padding: 11px 14px; border-radius: 3px; border: 1px solid var(--border); background: var(--black); color: var(--text); font-size: 14px; font-family: 'Barlow', sans-serif; transition: border-color .15s; }
-    .field input:focus { outline: none; border-color: var(--red); }
+    .field input, .field select { width: 100%; padding: 11px 14px; border-radius: 3px; border: 1px solid var(--border); background: var(--black); color: var(--text); font-size: 14px; font-family: 'Barlow', sans-serif; transition: border-color .15s; }
+    .field input:focus, .field select:focus { outline: none; border-color: var(--red); }
 
     .btn-row { display: flex; gap: 8px; }
     .btn-primary { flex: 1; padding: 11px; border-radius: 3px; border: none; cursor: pointer; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif; color: #fff; background: var(--red); transition: background .15s, opacity .2s; }
@@ -281,6 +286,8 @@
       <div class="add-title" id="add-form-title">Nuevo freelancer</div>
       <div class="field"><label>Nombre completo</label><input type="text" id="new-nombre" placeholder="Ej: Juan García" /></div>
       <div class="field"><label>Teléfono (formato internacional)</label><input type="text" id="new-telefono" placeholder="Ej: 5491123456789" /></div>
+      <div class="field"><label>Área</label><select id="new-area"></select></div>
+      <div class="field"><label>Tipo de alimentación</label><select id="new-alimentacion"><option value="comun">Común</option><option value="vegetariano">Vegetariano</option><option value="sin_tacc">Sin TACC</option></select></div>
       <div class="btn-row">
         <button class="btn-primary" id="btn-guardar-fl">Guardar</button>
         <button class="btn-sec" id="btn-cancelar-add">Cancelar</button>
@@ -422,12 +429,18 @@
   }
 
   function normalizeFreelancer(fl) {
+    const alimentacion = ['comun','vegetariano','sin_tacc'].includes(fl.alimentacion) ? fl.alimentacion : 'comun';
     return {
       id: Number(fl.id),
       nombre: String(fl.nombre || '').trim(),
       area: AREAS[fl.area] ? fl.area : 'Otros',
-      telefono: String(fl.telefono || '').replace(/\D/g, '')
+      telefono: String(fl.telefono || '').replace(/\D/g, ''),
+      alimentacion
     };
+  }
+
+  function foodLabel(value) {
+    return value === 'vegetariano' ? 'Vegetariano' : value === 'sin_tacc' ? 'Sin TACC' : 'Común';
   }
 
   function mergeLocalWithDefaults() {
@@ -440,6 +453,8 @@
 
   let freelancers = mergeLocalWithDefaults();
   let freelancersOnline = false;
+  let freelancerFoodOnline = true;
+  let editingFreelancerId = null;
 
   let selected = {};   // { [flId]: { fl, puesto, days: Set of date strings } }
   let currentTab = 'CCTV';
@@ -477,10 +492,16 @@
 
   async function upsertFreelancersOnline(list) {
     if (!list.length) return;
+    const payload = list.map(fl => {
+      const normalized = normalizeFreelancer(fl);
+      if (freelancerFoodOnline) return normalized;
+      const {alimentacion, ...withoutFood} = normalized;
+      return withoutFood;
+    });
     await freelancerFetch(`${SUPABASE_URL}/rest/v1/${FREELANCERS_TABLE}?on_conflict=id`, {
       method: 'POST',
       headers: freelancerHeaders({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }),
-      body: JSON.stringify(list.map(normalizeFreelancer))
+      body: JSON.stringify(payload)
     });
   }
 
@@ -492,9 +513,21 @@
 
     setFreelancerSyncStatus('Sincronizando freelancers...');
     try {
-      let online = await freelancerFetch(`${SUPABASE_URL}/rest/v1/${FREELANCERS_TABLE}?select=id,nombre,area,telefono&order=area.asc,nombre.asc`, {
-        headers: freelancerHeaders()
-      });
+      let online;
+      try {
+        online = await freelancerFetch(`${SUPABASE_URL}/rest/v1/${FREELANCERS_TABLE}?select=id,nombre,area,telefono,alimentacion&order=area.asc,nombre.asc`, {
+          headers: freelancerHeaders()
+        });
+        freelancerFoodOnline = true;
+      } catch (error) {
+        if (!/alimentacion|column/i.test(error.message)) throw error;
+        freelancerFoodOnline = false;
+        online = await freelancerFetch(`${SUPABASE_URL}/rest/v1/${FREELANCERS_TABLE}?select=id,nombre,area,telefono&order=area.asc,nombre.asc`, {
+          headers: freelancerHeaders()
+        });
+        const localById = new Map(readLocalFreelancers().map(normalizeFreelancer).map(fl => [fl.id, fl]));
+        online = online.map(fl => ({...fl, alimentacion: localById.get(Number(fl.id))?.alimentacion || 'comun'}));
+      }
 
       if (!online.length) {
         await upsertFreelancersOnline(freelancers);
@@ -513,7 +546,10 @@
       freelancers = online.map(normalizeFreelancer).filter(fl => fl.id && fl.nombre);
       freelancersOnline = true;
       save();
-      setFreelancerSyncStatus(`${freelancers.length} freelancers guardados online`, 'online');
+      setFreelancerSyncStatus(
+        freelancerFoodOnline ? `${freelancers.length} freelancers guardados online` : `${freelancers.length} freelancers online · ejecutar supabase-enable-freelancer-food.sql`,
+        freelancerFoodOnline ? 'online' : 'offline'
+      );
       renderTabs(); renderList(); updateCount();
     } catch (error) {
       freelancersOnline = false;
@@ -668,10 +704,12 @@
           <div style="min-width:0">
             <div class="fl-name">${fl.nombre}</div>
             ${fl.telefono?`<div class="fl-phone">+${fl.telefono}</div>`:''}
+            <span class="fl-food ${fl.alimentacion}">${foodLabel(fl.alimentacion)}</span>
           </div>
           <div class="fl-card-right">
             ${isSel?`<input class="fl-sala-input" data-sala="${fl.id}" placeholder="Sala" value="${sala}" />`+
              `<input class="fl-puesto-input" data-puesto="${fl.id}" placeholder="Puesto asignado" value="${puesto}" />`:''}
+            <button class="btn-edit" type="button" data-edit="${fl.id}">Editar</button>
             <button class="btn-del" data-del="${fl.id}">✕</button>
           </div>
         </div>
@@ -715,6 +753,13 @@
       };
     });
 
+    c.querySelectorAll('[data-edit]').forEach(btn=>{
+      btn.onclick=()=>{
+        const freelancer=freelancers.find(fl=>fl.id===+btn.dataset.edit);
+        if(freelancer) openFreelancerForm(freelancer);
+      };
+    });
+
     // Delete
     c.querySelectorAll('[data-del]').forEach(btn=>{
       btn.onclick=async()=>{
@@ -736,7 +781,9 @@
       };
     });
 
-    document.getElementById('add-form-title').textContent=`${AREAS[currentTab].icon} Nuevo freelancer — ${currentTab}`;
+    if (editingFreelancerId === null && !document.getElementById('add-form').classList.contains('open')) {
+      document.getElementById('add-form-title').textContent=`${AREAS[currentTab].icon} Nuevo freelancer — ${currentTab}`;
+    }
   }
 
   function updateCount(){
@@ -751,42 +798,87 @@
   ['f-evento','f-orden','f-lugar'].forEach(id=>document.getElementById(id).addEventListener('input',checkGenerarBtn));
 
   // ---- ADD FREELANCER ----
-  document.getElementById('add-toggle-btn').onclick=()=>document.getElementById('add-form').classList.toggle('open');
-  document.getElementById('btn-cancelar-add').onclick=()=>{
-    document.getElementById('add-form').classList.remove('open');
+  const freelancerAreaEl=document.getElementById('new-area');
+  Object.keys(AREAS).forEach(area=>freelancerAreaEl.add(new Option(`${AREAS[area].icon} ${area}`,area)));
+
+  function resetFreelancerForm(){
+    editingFreelancerId=null;
     document.getElementById('new-nombre').value='';
     document.getElementById('new-telefono').value='';
+    document.getElementById('new-alimentacion').value='comun';
+    freelancerAreaEl.value=currentTab;
+    document.getElementById('btn-guardar-fl').textContent='Guardar';
+    document.getElementById('add-form-title').textContent=`${AREAS[currentTab].icon} Nuevo freelancer — ${currentTab}`;
+  }
+
+  function openFreelancerForm(freelancer=null){
+    const form=document.getElementById('add-form');
+    if(freelancer){
+      editingFreelancerId=freelancer.id;
+      document.getElementById('new-nombre').value=freelancer.nombre;
+      document.getElementById('new-telefono').value=freelancer.telefono;
+      freelancerAreaEl.value=freelancer.area;
+      document.getElementById('new-alimentacion').value=freelancer.alimentacion||'comun';
+      document.getElementById('add-form-title').textContent=`Editar freelancer — ${freelancer.nombre}`;
+      document.getElementById('btn-guardar-fl').textContent='Guardar cambios';
+    }else{
+      resetFreelancerForm();
+    }
+    form.classList.add('open');
+    form.scrollIntoView({behavior:'smooth',block:'center'});
+    setTimeout(()=>document.getElementById('new-nombre').focus(),250);
+  }
+
+  document.getElementById('add-toggle-btn').onclick=()=>{
+    const form=document.getElementById('add-form');
+    if(form.classList.contains('open')){ form.classList.remove('open'); resetFreelancerForm(); }
+    else openFreelancerForm();
+  };
+  document.getElementById('btn-cancelar-add').onclick=()=>{
+    document.getElementById('add-form').classList.remove('open');
+    resetFreelancerForm();
   };
   document.getElementById('btn-guardar-fl').onclick=async()=>{
     const nombre=document.getElementById('new-nombre').value.trim();
     const telefono=document.getElementById('new-telefono').value.trim().replace(/\D/g,'');
+    const area=freelancerAreaEl.value;
+    const alimentacion=document.getElementById('new-alimentacion').value;
     if(!nombre) return alert('Completá el nombre.');
     const button=document.getElementById('btn-guardar-fl');
-    const freelancer={id:Date.now(),nombre,area:currentTab,telefono};
+    const wasEditing=editingFreelancerId!==null;
+    const freelancer={id:wasEditing?editingFreelancerId:Date.now(),nombre,area,telefono,alimentacion};
     button.disabled=true;
     button.textContent='Guardando...';
-    freelancers.push(freelancer);
+    if(wasEditing){
+      const index=freelancers.findIndex(fl=>fl.id===freelancer.id);
+      if(index>=0) freelancers[index]=freelancer;
+      if(selected[freelancer.id]) selected[freelancer.id].fl=freelancer;
+    }else{
+      freelancers.push(freelancer);
+    }
+    currentTab=area;
     save(); renderTabs(); renderList();
     try {
       await addFreelancerOnline(freelancer);
       freelancersOnline=true;
-      setFreelancerSyncStatus(`${freelancers.length} freelancers guardados online`, 'online');
+      setFreelancerSyncStatus(
+        freelancerFoodOnline ? `${freelancers.length} freelancers guardados online` : `${freelancers.length} freelancers online · alimentación local hasta ejecutar el SQL`,
+        freelancerFoodOnline ? 'online' : 'offline'
+      );
     } catch (error) {
       freelancersOnline=false;
       console.error('No se pudo guardar el freelancer online:', error);
-      setFreelancerSyncStatus('Alta guardada localmente · sincronización pendiente', 'offline');
-      alert('El freelancer quedó guardado en este navegador. Se subirá a la base cuando vuelva la conexión.');
+      setFreelancerSyncStatus('Cambios guardados localmente · sincronización pendiente', 'offline');
+      alert('Los cambios quedaron guardados en este navegador. Se subirán a la base cuando vuelva la conexión.');
     } finally {
       button.disabled=false;
-      button.textContent='Guardar';
     }
     document.getElementById('add-form').classList.remove('open');
-    document.getElementById('new-nombre').value='';
-    document.getElementById('new-telefono').value='';
+    resetFreelancerForm();
   };
 
   function buildExcelData(orden, lugar, selectedValues = Object.values(selected), eventDays = days) {
-    const headers = ['N° de Orden','Lugar','Sala','Mes','Fecha','Día','Horario','Tipo','Vianda','Nombre y Apellido','Puesto'];
+    const headers = ['N° de Orden','Lugar','Sala','Fecha','Horario','Tipo','Vianda','Alimentación','Nombre y Apellido','Puesto'];
     const rows = [headers];
 
     selectedValues.forEach(sel => {
@@ -795,11 +887,7 @@
 
       flDays.forEach(day => {
         const date = new Date(day.date+'T12:00:00');
-        const mesStr = date.toLocaleDateString('es-AR',{month:'long',year:'numeric'});
-        const mesCapital = mesStr.charAt(0).toUpperCase()+mesStr.slice(1);
         const fecha = date.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
-        const dia = date.toLocaleDateString('es-AR',{weekday:'long'});
-        const diaCapital = dia.charAt(0).toUpperCase()+dia.slice(1);
         const tipo = day.tipo==='evento'?'Evento':day.tipo==='pruebas'?'Armado y Pruebas':day.tipo==='armado_evento'?'Armado y Evento':day.tipo==='evento_desarme'?'Evento y Desarme':day.tipo==='desarme'?'Desarme':'Armado';
         const horario = day.horario ? `${parseInt(day.horario.split(':')[0])}:${day.horario.split(':')[1]} hs` : '';
 
@@ -807,12 +895,11 @@
           orden,
           lugar,
           sala||'',
-          mesCapital,
           fecha,
-          diaCapital,
           horario,
           tipo,
           day.vianda ? 'Sí' : 'No',
+          foodLabel(fl.alimentacion),
           fl.nombre,
           puesto||''
         ]);
@@ -851,7 +938,7 @@
       const wrapper=document.createElement('div');
       wrapper.innerHTML=`
         <div class="citation-person-name">${AREAS[fl.area].icon} ${fl.nombre}</div>
-        <div class="citation-person-area">${fl.area}</div>`;
+        <div class="citation-person-area">${fl.area} · ${foodLabel(fl.alimentacion)}</div>`;
 
       const card=document.createElement('div');
       card.className='citation-card';
@@ -874,6 +961,7 @@
               ${salaFinal?`<div class="cf"><div class="cf-label">Sala</div><div class="cf-value">${salaFinal}</div></div>`:''}
               <div class="cf"><div class="cf-label">Puesto</div><div class="cf-value">${puestoFinal}</div></div>
             </div>
+            <div class="cf"><div class="cf-label">Alimentación</div><div class="cf-value">${foodLabel(fl.alimentacion)}</div></div>
             <div class="cf">
               <div class="cf-label">Cronograma</div>
               <div class="cf-value">
@@ -994,12 +1082,11 @@
         {wch:14}, // N° Orden
         {wch:28}, // Lugar
         {wch:12}, // Sala
-        {wch:18}, // Mes
         {wch:12}, // Fecha
-        {wch:14}, // Día
         {wch:12}, // Horario
         {wch:22}, // Tipo
         {wch:10}, // Vianda
+        {wch:16}, // Alimentación
         {wch:26}, // Nombre
         {wch:28}  // Puesto
       ];
@@ -1031,6 +1118,7 @@
       `\uD83D\uDCCD Lugar: ${lugar}\n` +
       (sala ? `\uD83C\uDFE0 Sala: ${sala}\n` : '') +
       `\uD83D\uDC64 Puesto: ${puesto}\n` +
+      `\uD83C\uDF7D Alimentación: ${foodLabel(fl.alimentacion)}\n` +
       `Cronograma:\n${daysText}\n\n` +
       `_Congress Rental_`;
   }
