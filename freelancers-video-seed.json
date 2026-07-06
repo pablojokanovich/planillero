@@ -24,10 +24,10 @@
   {"id":77,"nombre":"Teves Julio Nicolás","area":"Video","telefono":"541135761884"},
   {"id":78,"nombre":"Levington Joaquin","area":"Video","telefono":"543497646696"},
   {"id":79,"nombre":"Nadal Marcelo Miguel","area":"Video","telefono":"541167095791"},
-  {"id":80,"nombre":"Casquero Juan Manuel","area":"Video","telefono":""},
-  {"id":81,"nombre":"Nolan Carlos","area":"Video","telefono":""},
-  {"id":82,"nombre":"Mendez Valeria Micaela Ayelen","area":"Video","telefono":""},
-  {"id":83,"nombre":"Casco Maximiliano","area":"Video","telefono":""},
-  {"id":84,"nombre":"Ibarra Gabriel","area":"Video","telefono":"541158806297"},
-  {"id":85,"nombre":"Albes Juan angel","area":"Video","telefono":"54131162116"}
+  {"id":80,"nombre":"Casco Maximiliano","area":"Video","telefono":""},
+  {"id":81,"nombre":"Ibarra Gabriel","area":"Video","telefono":"541158806297"},
+  {"id":82,"nombre":"Albes Juan Angel","area":"Video","telefono":"54131162116"},
+  {"id":83,"nombre":"Casquero Juan Manuel","area":"Sonido","telefono":""},
+  {"id":84,"nombre":"Nolan Carlos","area":"Sonido","telefono":""},
+  {"id":85,"nombre":"Mendez Valeria Micaela Ayelen","area":"Sonido","telefono":""}
 ]
