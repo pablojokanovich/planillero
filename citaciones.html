@@ -938,7 +938,7 @@
       const wrapper=document.createElement('div');
       wrapper.innerHTML=`
         <div class="citation-person-name">${AREAS[fl.area].icon} ${fl.nombre}</div>
-        <div class="citation-person-area">${fl.area} · ${foodLabel(fl.alimentacion)}</div>`;
+        <div class="citation-person-area">${fl.area}</div>`;
 
       const card=document.createElement('div');
       card.className='citation-card';
@@ -961,7 +961,6 @@
               ${salaFinal?`<div class="cf"><div class="cf-label">Sala</div><div class="cf-value">${salaFinal}</div></div>`:''}
               <div class="cf"><div class="cf-label">Puesto</div><div class="cf-value">${puestoFinal}</div></div>
             </div>
-            <div class="cf"><div class="cf-label">Alimentación</div><div class="cf-value">${foodLabel(fl.alimentacion)}</div></div>
             <div class="cf">
               <div class="cf-label">Cronograma</div>
               <div class="cf-value">
@@ -1118,7 +1117,6 @@
       `\uD83D\uDCCD Lugar: ${lugar}\n` +
       (sala ? `\uD83C\uDFE0 Sala: ${sala}\n` : '') +
       `\uD83D\uDC64 Puesto: ${puesto}\n` +
-      `\uD83C\uDF7D Alimentación: ${foodLabel(fl.alimentacion)}\n` +
       `Cronograma:\n${daysText}\n\n` +
       `_Congress Rental_`;
   }
