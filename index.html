@@ -2558,7 +2558,8 @@ function printSalaArea(salaId, areaKey) {
   showPrintAndRestore(pdfEl, filename, {
     os: ev.os, lugar: ev.lugar, sala: sala.name, area: AREAS[areaKey].label,
     armado: ev.armado, desarme: ev.desarme, lider: ev.lider, total_units: totalUnits,
-    event_data: getEventSnapshot()
+    event_data: getEventSnapshot(),
+    __deposit_items: flattenDepositItems([{ sala, areaKey, items }])
   });
 }
 
@@ -2576,8 +2577,29 @@ function printAllSalasForArea(areaKey) {
   showPrintAndRestore(pdfEl, filename, {
     os: ev.os, lugar: ev.lugar, sala: pages.map(p => p.sala.name).join(', '), area: AREAS[areaKey].label,
     armado: ev.armado, desarme: ev.desarme, lider: ev.lider, total_units: totalUnits,
-    event_data: getEventSnapshot()
+    event_data: getEventSnapshot(),
+    __deposit_items: flattenDepositItems(pages.map(page => ({ sala: page.sala, areaKey, items: page.items })))
   });
+}
+
+function flattenDepositItems(pages) {
+  const rows = [];
+  pages.forEach(page => {
+    const area = AREAS[page.areaKey];
+    page.items.forEach(cat => {
+      cat.items.forEach(item => {
+        rows.push({
+          sala: page.sala.name,
+          area: area.label,
+          category: cat.cat,
+          equipment: item.name,
+          quantity: Number(item.qty || 0),
+          observations: item.obs || '',
+        });
+      });
+    });
+  });
+  return rows.filter(item => item.quantity > 0);
 }
 
 // ════════════════════════════════════════
@@ -2586,7 +2608,8 @@ function printAllSalasForArea(areaKey) {
 
 const {
   SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET, SUPABASE_TABLE,
-  INVENTORY_CATEGORIES_TABLE, INVENTORY_ITEMS_TABLE
+  INVENTORY_CATEGORIES_TABLE, INVENTORY_ITEMS_TABLE,
+  DEPOSIT_CHECKLISTS_TABLE, DEPOSIT_CHECKLIST_ITEMS_TABLE
 } = window.PDF_ARCHIVE_CONFIG;
 
 function buildUniquePdfPath(filename) {
@@ -2628,11 +2651,82 @@ async function savePdfMetadata(metadata) {
       'apikey': SUPABASE_KEY,
       'Authorization': `Bearer ${SUPABASE_KEY}`,
       'Content-Type': 'application/json',
-      'Prefer': 'return=minimal',
+      'Prefer': 'return=representation',
     },
-    body: JSON.stringify(metadata),
+    body: JSON.stringify(stripInternalMetadata(metadata)),
   });
   if (!res.ok) throw new Error(await res.text());
+  const rows = await res.json();
+  return rows[0];
+}
+
+function stripInternalMetadata(metadata) {
+  const clean = { ...metadata };
+  delete clean.__deposit_items;
+  return clean;
+}
+
+function buildDepositUrl(checklist) {
+  const url = new URL('deposito.html', window.location.href);
+  url.searchParams.set('id', checklist.id);
+  url.searchParams.set('token', checklist.token);
+  return url.href;
+}
+
+async function createDepositChecklist(pdfDocument, metadata) {
+  const items = Array.isArray(metadata.__deposit_items) ? metadata.__deposit_items : [];
+  if (!pdfDocument?.id || !items.length || !DEPOSIT_CHECKLISTS_TABLE || !DEPOSIT_CHECKLIST_ITEMS_TABLE) return null;
+
+  const expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
+  const checklistPayload = {
+    pdf_document_id: pdfDocument.id,
+    os: metadata.os,
+    lugar: metadata.lugar,
+    sala: metadata.sala,
+    area: metadata.area,
+    armado: metadata.armado,
+    desarme: metadata.desarme,
+    lider: metadata.lider,
+    total_items: items.length,
+    expires_at: expiresAt,
+  };
+
+  const checklistRes = await fetch(`${SUPABASE_URL}/rest/v1/${DEPOSIT_CHECKLISTS_TABLE}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=representation',
+    },
+    body: JSON.stringify(checklistPayload),
+  });
+  if (!checklistRes.ok) throw new Error(await checklistRes.text());
+  const [checklist] = await checklistRes.json();
+
+  const itemPayload = items.map((item, index) => ({
+    checklist_id: checklist.id,
+    sala: item.sala,
+    area: item.area,
+    category: item.category,
+    equipment: item.equipment,
+    quantity: item.quantity,
+    observations: item.observations,
+    sort_order: index,
+  }));
+
+  const itemsRes = await fetch(`${SUPABASE_URL}/rest/v1/${DEPOSIT_CHECKLIST_ITEMS_TABLE}`, {
+    method: 'POST',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    },
+    body: JSON.stringify(itemPayload),
+  });
+  if (!itemsRes.ok) throw new Error(await itemsRes.text());
+  return checklist;
 }
 
 function showPrintAndRestore(pdfEl, filename, metadata) {
@@ -2780,15 +2874,22 @@ async function generateAndUploadPdf(pdfEl, filename, metadata) {
 
     const pdfBlob = pdf.output('blob');
     const uploaded = await uploadPdfToSupabase(pdfBlob, filename);
-    await savePdfMetadata({
+    const savedPdf = await savePdfMetadata({
       ...metadata,
       filename: `${filename}.pdf`,
       storage_path: uploaded.path,
       public_url: uploaded.publicUrl,
       file_size: pdfBlob.size,
     });
+    let depositUrl = '';
+    try {
+      const checklist = await createDepositChecklist(savedPdf, metadata);
+      if (checklist) depositUrl = buildDepositUrl(checklist);
+    } catch (checklistError) {
+      console.error('Deposit checklist error:', checklistError);
+    }
     toastEl.style.display = prevDisplay;
-    showToast('✓ PDF guardado y disponible online');
+    showToast(depositUrl ? `PDF online y deposito creado: ${depositUrl}` : 'PDF guardado y disponible online');
   } catch (e) {
     console.error('Supabase upload error:', e);
     const toastEl2 = document.getElementById('toast');

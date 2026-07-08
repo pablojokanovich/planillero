@@ -6,4 +6,6 @@ window.PDF_ARCHIVE_CONFIG = Object.freeze({
   INVENTORY_CATEGORIES_TABLE: 'inventory_categories',
   INVENTORY_ITEMS_TABLE: 'inventory_items',
   FREELANCERS_TABLE: 'freelancers',
+  DEPOSIT_CHECKLISTS_TABLE: 'deposit_checklists',
+  DEPOSIT_CHECKLIST_ITEMS_TABLE: 'deposit_checklist_items',
 });

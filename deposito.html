@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Deposito online - Congress Rental</title>
+<script src="supabase-config.js"></script>
+<style>
+  :root {
+    --red: #e8000a;
+    --red-dark: #b30008;
+    --black: #0a0a0a;
+    --panel: #151515;
+    --panel-2: #202020;
+    --line: #343434;
+    --muted: #9b9b9b;
+    --white: #fff;
+    --green: #31c36b;
+    --body: Inter, Arial, sans-serif;
+    --mono: "Cascadia Mono", Consolas, monospace;
+    --display: "Arial Narrow", "Roboto Condensed", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; min-height: 100vh; background: var(--black); color: var(--white); font-family: var(--body); }
+  header { position: sticky; top: 0; z-index: 5; padding: 14px 16px; background: rgba(10,10,10,.96); border-bottom: 2px solid var(--red); }
+  .brand { display: flex; align-items: center; gap: 10px; font: 800 15px/1 var(--display); letter-spacing: 1.2px; text-transform: uppercase; }
+  .brand-mark { width: 30px; height: 30px; display: grid; place-items: center; background: var(--red); font: 700 10px var(--mono); }
+  main { width: min(760px, 100%); margin: 0 auto; padding: 22px 14px 80px; }
+  .status { margin: 20px 0; padding: 16px; background: var(--panel); border: 1px solid var(--line); color: var(--muted); font: 12px var(--mono); line-height: 1.55; }
+  .status.error { color: #ff8989; border-color: #7c252b; }
+  .hero { display: grid; gap: 12px; margin-bottom: 16px; }
+  .eyebrow { margin: 0; color: var(--red); font: 10px var(--mono); letter-spacing: 2px; text-transform: uppercase; }
+  h1 { margin: 0; font: 800 clamp(32px, 9vw, 54px)/.92 var(--display); letter-spacing: 1.2px; text-transform: uppercase; }
+  .meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .meta-item { padding: 10px; background: var(--panel); border: 1px solid var(--line); }
+  .meta-item span { display: block; color: var(--muted); font: 9px var(--mono); letter-spacing: 1px; text-transform: uppercase; }
+  .meta-item strong { display: block; margin-top: 4px; overflow-wrap: anywhere; font-size: 14px; }
+  .progress-wrap { position: sticky; top: 59px; z-index: 4; margin: 0 -14px 14px; padding: 12px 14px; background: rgba(10,10,10,.96); border-bottom: 1px solid var(--line); }
+  .progress-line { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 9px; font: 700 12px var(--mono); letter-spacing: .5px; }
+  .progress-track { height: 11px; overflow: hidden; background: #252525; border: 1px solid #3d3d3d; }
+  .progress-fill { height: 100%; width: 0%; background: var(--green); transition: width .18s; }
+  .tools { display: grid; gap: 10px; margin-bottom: 13px; }
+  .filters { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+  button, input { min-height: 42px; border: 1px solid var(--line); background: #111; color: var(--white); padding: 0 11px; font: 700 11px var(--mono); letter-spacing: .7px; }
+  button { cursor: pointer; }
+  button.active { background: var(--red); border-color: var(--red); }
+  input { width: 100%; font-weight: 400; }
+  .items { display: grid; gap: 9px; }
+  .item { display: grid; grid-template-columns: 42px 1fr auto; gap: 11px; align-items: center; min-height: 66px; padding: 11px; background: var(--panel); border: 1px solid var(--line); border-left: 3px solid var(--red); }
+  .item.checked { border-left-color: var(--green); background: #101912; }
+  .check { width: 42px; height: 42px; display: grid; place-items: center; padding: 0; border-color: #555; background: var(--panel-2); font-size: 20px; }
+  .item.checked .check { background: var(--green); border-color: var(--green); color: #07140b; }
+  .name { font-weight: 800; line-height: 1.25; overflow-wrap: anywhere; }
+  .sub { margin-top: 4px; color: var(--muted); font: 10px var(--mono); line-height: 1.35; overflow-wrap: anywhere; }
+  .qty { min-width: 42px; padding: 7px 8px; text-align: center; background: #0d0d0d; border: 1px solid #3d3d3d; font: 800 18px var(--display); }
+  .empty { display: none; padding: 28px 14px; color: var(--muted); text-align: center; border: 1px dashed var(--line); }
+  .expired { color: #ffb3b3; }
+  @media (max-width: 520px) {
+    .meta { grid-template-columns: 1fr; }
+    .item { grid-template-columns: 40px 1fr 38px; gap: 9px; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <div class="brand"><span class="brand-mark">CR</span><span>Deposito online</span></div>
+</header>
+<main>
+  <div class="status" id="status">Cargando planilla de deposito...</div>
+  <section id="app" hidden>
+    <div class="hero">
+      <p class="eyebrow">// CONTROL DE EQUIPOS GUARDADOS</p>
+      <h1 id="title">Deposito</h1>
+      <div class="meta" id="meta"></div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-line"><span id="progress-text">Guardado: 0 / 0</span><span id="progress-percent">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="progress-fill"></div></div>
+    </div>
+
+    <section class="tools" aria-label="Filtros">
+      <div class="filters">
+        <button type="button" class="active" data-filter="all">TODOS</button>
+        <button type="button" data-filter="pending">PENDIENTES</button>
+        <button type="button" data-filter="checked">GUARDADOS</button>
+      </div>
+      <input id="search" type="search" placeholder="Buscar equipo, sala o categoria..." autocomplete="off">
+    </section>
+
+    <div class="items" id="items"></div>
+    <div class="empty" id="empty">No hay equipos con este filtro.</div>
+  </section>
+</main>
+<script>
+const {
+  SUPABASE_URL,
+  SUPABASE_KEY,
+  DEPOSIT_CHECKLISTS_TABLE,
+  DEPOSIT_CHECKLIST_ITEMS_TABLE
+} = window.PDF_ARCHIVE_CONFIG;
+
+const params = new URLSearchParams(window.location.search);
+const checklistId = params.get('id');
+const token = params.get('token');
+const statusEl = document.getElementById('status');
+const appEl = document.getElementById('app');
+const itemsEl = document.getElementById('items');
+const emptyEl = document.getElementById('empty');
+const searchEl = document.getElementById('search');
+const filterButtons = Array.from(document.querySelectorAll('[data-filter]'));
+let checklist = null;
+let items = [];
+let currentFilter = 'all';
+let saveTimers = new Map();
+
+function headers(prefer) {
+  const h = {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    'Content-Type': 'application/json',
+  };
+  if (prefer) h.Prefer = prefer;
+  return h;
+}
+
+function setStatus(message, error = false) {
+  statusEl.textContent = message;
+  statusEl.classList.toggle('error', error);
+  statusEl.hidden = false;
+}
+
+function hideStatus() {
+  statusEl.hidden = true;
+}
+
+function formatDateTime(value) {
+  if (!value) return '-';
+  return new Intl.DateTimeFormat('es-AR', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(value));
+}
+
+function isExpired(record) {
+  return record?.expires_at && new Date(record.expires_at).getTime() < Date.now();
+}
+
+async function loadChecklist() {
+  if (!checklistId || !token) {
+    setStatus('Link incompleto. Abrilo desde Planillas Hechas o desde el link generado al crear el PDF.', true);
+    return;
+  }
+  if (!DEPOSIT_CHECKLISTS_TABLE || !DEPOSIT_CHECKLIST_ITEMS_TABLE) {
+    setStatus('Falta configurar las tablas de deposito en supabase-config.js.', true);
+    return;
+  }
+  try {
+    const checklistUrl = `${SUPABASE_URL}/rest/v1/${DEPOSIT_CHECKLISTS_TABLE}?id=eq.${encodeURIComponent(checklistId)}&token=eq.${encodeURIComponent(token)}&select=*`;
+    const checklistRes = await fetch(checklistUrl, { headers: headers() });
+    if (!checklistRes.ok) throw new Error(await checklistRes.text());
+    const checklistRows = await checklistRes.json();
+    checklist = checklistRows[0];
+    if (!checklist) {
+      setStatus('No se encontro esta planilla de deposito.', true);
+      return;
+    }
+    if (isExpired(checklist)) {
+      setStatus(`Esta planilla vencio el ${formatDateTime(checklist.expires_at)}.`, true);
+      statusEl.classList.add('expired');
+      return;
+    }
+
+    const itemsUrl = `${SUPABASE_URL}/rest/v1/${DEPOSIT_CHECKLIST_ITEMS_TABLE}?checklist_id=eq.${encodeURIComponent(checklist.id)}&select=*&order=sort_order.asc`;
+    const itemsRes = await fetch(itemsUrl, { headers: headers() });
+    if (!itemsRes.ok) throw new Error(await itemsRes.text());
+    items = await itemsRes.json();
+    renderHeader();
+    render();
+    hideStatus();
+    appEl.hidden = false;
+  } catch (error) {
+    console.error('No se pudo cargar deposito:', error);
+    setStatus('No se pudo cargar la planilla. Verifica que la migracion de deposito este ejecutada.', true);
+  }
+}
+
+function renderHeader() {
+  document.getElementById('title').textContent = checklist.area || 'Deposito';
+  const meta = document.getElementById('meta');
+  meta.replaceChildren();
+  [
+    ['OS', checklist.os],
+    ['Lugar', checklist.lugar],
+    ['Sala', checklist.sala],
+    ['Armado', checklist.armado],
+    ['Responsable', checklist.lider],
+    ['Vence', formatDateTime(checklist.expires_at)],
+  ].forEach(([label, value]) => {
+    const card = document.createElement('div');
+    card.className = 'meta-item';
+    card.innerHTML = `<span>${label}</span><strong></strong>`;
+    card.querySelector('strong').textContent = value || '-';
+    meta.appendChild(card);
+  });
+}
+
+function renderProgress() {
+  const checked = items.filter(item => item.checked).length;
+  const total = items.length;
+  const percent = total ? Math.round((checked / total) * 100) : 0;
+  document.getElementById('progress-text').textContent = `Guardado: ${checked} / ${total}`;
+  document.getElementById('progress-percent').textContent = `${percent}%`;
+  document.getElementById('progress-fill').style.width = `${percent}%`;
+}
+
+function matchesFilter(item) {
+  const q = searchEl.value.trim().toLowerCase();
+  const haystack = [item.sala, item.area, item.category, item.equipment, item.observations].join(' ').toLowerCase();
+  const filterOk = currentFilter === 'all' || (currentFilter === 'checked' && item.checked) || (currentFilter === 'pending' && !item.checked);
+  return filterOk && (!q || haystack.includes(q));
+}
+
+function render() {
+  renderProgress();
+  itemsEl.replaceChildren();
+  const visible = items.filter(matchesFilter);
+  visible.forEach(item => itemsEl.appendChild(createItem(item)));
+  emptyEl.style.display = visible.length ? 'none' : 'block';
+}
+
+function createItem(item) {
+  const row = document.createElement('article');
+  row.className = `item${item.checked ? ' checked' : ''}`;
+  const check = document.createElement('button');
+  check.className = 'check';
+  check.type = 'button';
+  check.textContent = item.checked ? '✓' : '';
+  check.setAttribute('aria-label', item.checked ? 'Marcar pendiente' : 'Marcar guardado');
+  check.addEventListener('click', () => toggleItem(item.id));
+
+  const body = document.createElement('div');
+  const name = document.createElement('div');
+  name.className = 'name';
+  name.textContent = item.equipment;
+  const sub = document.createElement('div');
+  sub.className = 'sub';
+  sub.textContent = [item.sala, item.category, item.observations].filter(Boolean).join(' · ');
+  body.append(name, sub);
+
+  const qty = document.createElement('div');
+  qty.className = 'qty';
+  qty.textContent = item.quantity;
+  row.append(check, body, qty);
+  row.addEventListener('click', event => {
+    if (event.target !== check) toggleItem(item.id);
+  });
+  return row;
+}
+
+function toggleItem(id) {
+  const item = items.find(row => row.id === id);
+  if (!item) return;
+  item.checked = !item.checked;
+  item.checked_at = item.checked ? new Date().toISOString() : null;
+  render();
+  queueSave(item);
+}
+
+function queueSave(item) {
+  clearTimeout(saveTimers.get(item.id));
+  const timer = setTimeout(() => saveItem(item), 250);
+  saveTimers.set(item.id, timer);
+}
+
+async function saveItem(item) {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${DEPOSIT_CHECKLIST_ITEMS_TABLE}?id=eq.${encodeURIComponent(item.id)}&checklist_id=eq.${encodeURIComponent(checklist.id)}`, {
+      method: 'PATCH',
+      headers: headers('return=minimal'),
+      body: JSON.stringify({ checked: item.checked, checked_at: item.checked_at }),
+    });
+    if (!res.ok) throw new Error(await res.text());
+  } catch (error) {
+    console.error('No se pudo guardar item:', error);
+    setStatus('No se pudo guardar el ultimo cambio. Revisa la conexion y toca de nuevo.', true);
+  }
+}
+
+filterButtons.forEach(button => {
+  button.addEventListener('click', () => {
+    currentFilter = button.dataset.filter;
+    filterButtons.forEach(btn => btn.classList.toggle('active', btn === button));
+    render();
+  });
+});
+searchEl.addEventListener('input', render);
+loadChecklist();
+</script>
+</body>
+</html>

@@ -66,6 +66,8 @@
   tbody tr:hover { background: #191919; }
   .pdf-link { display: inline-block; color: var(--white); background: var(--red); padding: 8px 11px; text-decoration: none; font: 700 10px var(--mono); letter-spacing: 1px; white-space: nowrap; }
   .pdf-link:hover { background: var(--red-dark); }
+  .deposit-link { background: #1f7a43; }
+  .deposit-link:hover { background: #155c31; }
   .file-actions { display: flex; align-items: center; gap: 7px; }
   .delete-btn { min-height: auto; padding: 8px 10px; background: transparent; border-color: #653236; color: #ff858a; font-size: 10px; white-space: nowrap; }
   .delete-btn:hover { background: #6d1117; border-color: var(--red); color: var(--white); }
@@ -143,8 +145,12 @@
   </div>
 </div>
 <script>
-const { SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET, SUPABASE_TABLE } = window.PDF_ARCHIVE_CONFIG;
+const {
+  SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET, SUPABASE_TABLE,
+  DEPOSIT_CHECKLISTS_TABLE
+} = window.PDF_ARCHIVE_CONFIG;
 let documents = [];
+let checklistByPdf = new Map();
 
 const listEl = document.getElementById('grouped-archive');
 const statusEl = document.getElementById('status');
@@ -166,6 +172,13 @@ function setStatus(message, error = false) {
 function publicUrl(path) {
   const encoded = String(path || '').split('/').map(encodeURIComponent).join('/');
   return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${encoded}`;
+}
+
+function depositUrl(checklist) {
+  const url = new URL('deposito.html', window.location.href);
+  url.searchParams.set('id', checklist.id);
+  url.searchParams.set('token', checklist.token);
+  return url.href;
 }
 
 function formatCreated(value) {
@@ -196,6 +209,16 @@ function createDocumentRow(doc) {
   const link = document.createElement('a');
   link.className = 'pdf-link'; link.target = '_blank'; link.rel = 'noopener';
   link.href = doc.public_url || publicUrl(doc.storage_path);
+  const checklist = checklistByPdf.get(doc.id);
+  if (checklist) {
+    const deposit = document.createElement('a');
+    deposit.className = 'pdf-link deposit-link';
+    deposit.target = '_blank';
+    deposit.rel = 'noopener';
+    deposit.href = depositUrl(checklist);
+    deposit.textContent = 'DEPOSITO';
+    actions.appendChild(deposit);
+  }
   link.textContent = 'VER PDF ↗';
   const deleteButton = document.createElement('button');
   deleteButton.className = 'delete-btn'; deleteButton.type = 'button'; deleteButton.textContent = 'ELIMINAR';
@@ -368,6 +391,7 @@ async function loadDocuments() {
     });
     if (!res.ok) throw new Error(await res.text());
     documents = await res.json();
+    await loadDepositChecklists();
     updateStats();
     render();
   } catch (error) {
@@ -378,6 +402,27 @@ async function loadDocuments() {
     setStatus('No se pudo abrir el archivo. Ejecutá supabase-setup.sql en el proyecto Supabase.', true);
   } finally {
     document.getElementById('refresh').disabled = false;
+  }
+}
+
+async function loadDepositChecklists() {
+  checklistByPdf = new Map();
+  if (!DEPOSIT_CHECKLISTS_TABLE) return;
+  try {
+    const select = 'id,pdf_document_id,token,expires_at,total_items';
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${DEPOSIT_CHECKLISTS_TABLE}?select=${select}&order=created_at.desc&limit=1000`, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const rows = await res.json();
+    const now = Date.now();
+    rows.forEach(row => {
+      if (!row.pdf_document_id) return;
+      if (row.expires_at && new Date(row.expires_at).getTime() < now) return;
+      if (!checklistByPdf.has(row.pdf_document_id)) checklistByPdf.set(row.pdf_document_id, row);
+    });
+  } catch (error) {
+    console.warn('No se pudieron cargar planillas de deposito:', error);
   }
 }
 
