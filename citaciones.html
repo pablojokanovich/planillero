@@ -577,6 +577,52 @@
   const fmtDateShort = d => { const dt=new Date(d+'T12:00:00'); return dt.toLocaleDateString('es-AR',{weekday:'short',day:'numeric',month:'short'}); };
   const fmtTime = t => { if(!t) return '—'; const [h,m]=t.split(':'); return `${parseInt(h)}:${m} hs`; };
 
+  function normalizeSelectedDays(sel) {
+    if (!sel) return new Set();
+    if (sel.days instanceof Set) return sel.days;
+    if (Array.isArray(sel.days)) {
+      sel.days = new Set(sel.days);
+      return sel.days;
+    }
+    if (sel.days && typeof sel.days === 'object') {
+      sel.days = new Set(Object.keys(sel.days).filter(date => sel.days[date]));
+      return sel.days;
+    }
+    sel.days = new Set();
+    return sel.days;
+  }
+
+  function syncSelectedDaysWithCurrentDays() {
+    const currentDates = new Set(days.map(d => d.date));
+    Object.values(selected).forEach(sel => {
+      const selDays = normalizeSelectedDays(sel);
+      [...selDays].forEach(date => { if (!currentDates.has(date)) selDays.delete(date); });
+      if (!selDays.size && days.length) days.forEach(d => selDays.add(d.date));
+    });
+  }
+
+  function selectedEventDays(sel, eventDays = days) {
+    const selDays = normalizeSelectedDays(sel);
+    return eventDays.filter(day => selDays.has(day.date));
+  }
+
+  async function copyTextToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text);
+      return;
+    }
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.setAttribute('readonly', '');
+    textarea.style.cssText = 'position:fixed;left:-9999px;top:-9999px';
+    document.body.appendChild(textarea);
+    textarea.select();
+    textarea.setSelectionRange(0, textarea.value.length);
+    const ok = document.execCommand('copy');
+    document.body.removeChild(textarea);
+    if (!ok) throw new Error('No se pudo copiar');
+  }
+
   function showView(id) {
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     document.getElementById('view-'+id).classList.add('active');
@@ -598,6 +644,7 @@
       const tipo = existing?.tipo || 'armado';
       days.push({ date: dStr, tipo, horario: existing?.horario||'', vianda: existing?.vianda||false });
     }
+    syncSelectedDaysWithCurrentDays();
     renderDays();
     // re-render FL list so day chips update
     renderList();
@@ -681,7 +728,7 @@
       const isSel=!!selected[fl.id];
       const puesto=selected[fl.id]?.puesto||'';
       const sala=selected[fl.id]?.sala||'';
-      const selDays=selected[fl.id]?.days || new Set();
+      const selDays=isSel ? normalizeSelectedDays(selected[fl.id]) : new Set();
 
       const card=document.createElement('div');
       card.className='fl-card'+(isSel?' selected':'');
@@ -748,8 +795,9 @@
         const date=chip.dataset.date;
         if(!selected[flid]) return;
         const s=selected[flid];
-        if(s.days.has(date)) s.days.delete(date);
-        else s.days.add(date);
+        const sDays = normalizeSelectedDays(s);
+        if(sDays.has(date)) sDays.delete(date);
+        else sDays.add(date);
         renderList();
       };
     });
@@ -883,8 +931,8 @@
     const rows = [headers];
 
     selectedValues.forEach(sel => {
-      const {fl, puesto, sala, days: selDays} = sel;
-      const flDays = eventDays.filter(day => selDays.has(day.date));
+      const {fl, puesto, sala} = sel;
+      const flDays = selectedEventDays(sel, eventDays);
 
       flDays.forEach(day => {
         const date = new Date(day.date+'T12:00:00');
@@ -921,12 +969,12 @@
     grid.innerHTML='';
 
     Object.values(selected).forEach((sel,idx)=>{
-      const {fl, puesto, sala, days: selDays}=sel;
+      const {fl, puesto, sala}=sel;
       const puestoFinal=puesto||'Sin especificar';
       const salaFinal=sala||'';
 
       // Only show days this freelancer is assigned to
-      const flDays=days.filter(d=>selDays.has(d.date));
+      const flDays=selectedEventDays(sel);
 
       const daysRows=flDays.map(d=>`
         <tr>
@@ -1016,6 +1064,17 @@
           setTimeout(()=>{copyBtn.textContent='📋 Copiar texto';copyBtn.classList.remove('copied');},2000);
         });
       };
+      copyBtn.onclick=async()=>{
+        try {
+          await copyTextToClipboard(buildMensaje(fl,puestoFinal,salaFinal,evento,orden,lugar,flDays).replace(/\*/g,'').replace(/_/g,''));
+          copyBtn.textContent='Copiado'; copyBtn.classList.add('copied');
+          setTimeout(()=>{copyBtn.textContent='Copiar texto';copyBtn.classList.remove('copied');},2000);
+        } catch (error) {
+          console.error('No se pudo copiar texto:', error);
+          copyBtn.textContent='No se pudo copiar';
+          setTimeout(()=>{copyBtn.textContent='Copiar texto';},2000);
+        }
+      };
       actions.appendChild(copyBtn);
       wrapper.appendChild(actions);
 
@@ -1032,8 +1091,8 @@
     const summaryLines = [];
 
     Object.values(selected).forEach(sel => {
-      const {fl, puesto, sala, days: selDays} = sel;
-      const flDaysSorted = days.filter(d=>selDays.has(d.date));
+      const {fl, puesto, sala} = sel;
+      const flDaysSorted = selectedEventDays(sel);
       if (!flDaysSorted.length) return;
       const firstDay = flDaysSorted[0];
       const lastDay  = flDaysSorted[flDaysSorted.length-1];
@@ -1065,6 +1124,18 @@
         copyAllBtn.classList.add('copied');
         setTimeout(() => { copyAllBtn.textContent = '📋 Copiar resumen'; copyAllBtn.classList.remove('copied'); }, 2000);
       });
+    };
+    copyAllBtn.onclick = async () => {
+      try {
+        await copyTextToClipboard(summaryLines.join('\n'));
+        copyAllBtn.textContent = 'Copiado';
+        copyAllBtn.classList.add('copied');
+        setTimeout(() => { copyAllBtn.textContent = 'Copiar resumen'; copyAllBtn.classList.remove('copied'); }, 2000);
+      } catch (error) {
+        console.error('No se pudo copiar resumen:', error);
+        copyAllBtn.textContent = 'No se pudo copiar';
+        setTimeout(() => { copyAllBtn.textContent = 'Copiar resumen'; }, 2000);
+      }
     };
     summaryList.appendChild(copyAllBtn);
 
