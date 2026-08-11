@@ -307,19 +307,22 @@
   /* ─── AREA SELECTOR ─── */
   .area-selector {
     display: flex;
-    gap: 12px;
-    margin-bottom: 32px;
+    gap: 8px;
+    margin-bottom: 18px;
     flex-wrap: wrap;
+    padding: 6px;
+    background: var(--gray-900);
+    border: 1px solid var(--gray-800);
   }
 
   .area-btn {
     font-family: var(--font-display);
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
-    letter-spacing: 2px;
-    padding: 10px 24px;
+    letter-spacing: 1.5px;
+    padding: 10px 18px;
     border: 1px solid var(--gray-600);
-    background: transparent;
+    background: var(--black);
     color: var(--gray-400);
     cursor: pointer;
     transition: all 0.2s;
@@ -340,6 +343,7 @@
     border-color: var(--red);
     color: var(--white);
     background: var(--red-glow);
+    box-shadow: inset 0 0 0 1px rgba(220, 38, 38, 0.18);
   }
 
   .area-btn.active::after { transform: scaleX(1); }
@@ -347,13 +351,21 @@
 
   .area-btn .count-badge {
     display: inline-block;
-    background: var(--red);
+    min-width: 20px;
+    background: var(--gray-800);
+    border: 1px solid var(--gray-700);
     color: var(--white);
     font-family: var(--font-mono);
     font-size: 10px;
-    padding: 1px 6px;
+    padding: 2px 6px;
     margin-left: 8px;
     vertical-align: middle;
+    text-align: center;
+  }
+
+  .area-btn.active .count-badge {
+    background: var(--red);
+    border-color: var(--red);
   }
 
   /* ─── EQUIPMENT TABLE ─── */
@@ -361,13 +373,14 @@
 
   .cat-header {
     font-family: var(--font-display);
-    font-size: 12px;
+    font-size: 11px;
     font-weight: 700;
-    letter-spacing: 3px;
+    letter-spacing: 2.5px;
     color: var(--red);
-    padding: 8px 0 6px;
+    padding: 14px 14px 9px;
     border-bottom: 1px solid var(--gray-700);
-    margin-bottom: 2px;
+    margin: 18px 0 0;
+    background: linear-gradient(90deg, rgba(220, 38, 38, 0.10), transparent 62%);
     display: flex;
     align-items: center;
     gap: 10px;
@@ -381,15 +394,45 @@
     flex-shrink: 0;
   }
 
+  .cat-header[data-cat="vMix"] {
+    color: var(--white);
+    border-color: rgba(220, 38, 38, 0.45);
+    background: linear-gradient(90deg, rgba(220, 38, 38, 0.20), rgba(39, 39, 42, 0.72));
+  }
+
   .equipo-row {
     display: grid;
     grid-template-columns: 1fr 110px 1fr;
     align-items: center;
     border-bottom: 1px solid var(--gray-800);
-    transition: background 0.15s;
+    border-left: 3px solid transparent;
+    min-height: 48px;
+    transition: background 0.15s, border-color 0.15s;
   }
 
   .equipo-row:hover { background: var(--gray-900); }
+
+  .equipo-row.has-value {
+    background: rgba(220, 38, 38, 0.055);
+    border-left-color: var(--red);
+  }
+
+  .equipo-row.has-value .equipo-name {
+    color: var(--white);
+    font-weight: 600;
+  }
+
+  .equipo-row.kit-row {
+    grid-template-columns: minmax(230px, 1fr) 130px minmax(180px, 0.9fr);
+    min-height: 62px;
+    background: rgba(220, 38, 38, 0.075);
+    border-top: 1px solid rgba(220, 38, 38, 0.28);
+    border-bottom-color: rgba(220, 38, 38, 0.24);
+  }
+
+  .equipo-row.kit-row.has-value {
+    background: rgba(220, 38, 38, 0.14);
+  }
 
   .equipo-name {
     font-family: var(--font-body);
@@ -398,6 +441,24 @@
     color: var(--gray-300);
     padding: 10px 12px 10px 20px;
     letter-spacing: 0.3px;
+  }
+
+  .kit-title {
+    display: block;
+    font-family: var(--font-display);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--white);
+  }
+
+  .kit-subtitle {
+    display: block;
+    margin-top: 3px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.6px;
+    color: var(--gray-400);
   }
 
   .equipo-qty-wrap {
@@ -412,11 +473,13 @@
     display: flex;
     align-items: center;
     border: 1px solid var(--gray-700);
-    transition: border-color 0.2s;
+    background: var(--black);
+    transition: border-color 0.2s, box-shadow 0.2s;
   }
 
   .qty-stepper.has-value {
     border-color: var(--red);
+    box-shadow: 0 0 0 1px rgba(220, 38, 38, 0.18);
   }
 
   .qty-btn {
@@ -438,6 +501,39 @@
 
   .qty-btn:hover { background: var(--gray-700); color: var(--white); }
   .qty-btn:active { background: var(--red); color: var(--white); }
+
+  .kit-check {
+    position: relative;
+    width: 42px;
+    height: 32px;
+    display: grid;
+    place-items: center;
+    background: var(--gray-900);
+    border: 1px solid var(--gray-700);
+    color: var(--gray-500);
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, color 0.2s;
+  }
+
+  .kit-check.has-value {
+    background: var(--red);
+    border-color: var(--red);
+    color: var(--white);
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.16);
+  }
+
+  .kit-check input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .kit-check span {
+    font-family: var(--font-mono);
+    font-size: 18px;
+    font-weight: 800;
+    line-height: 1;
+  }
 
   .equipo-qty {
     width: 40px;
@@ -604,14 +700,16 @@
   .area-summary {
     margin-bottom: 28px;
     border: 1px solid var(--gray-700);
+    background: rgba(24, 24, 27, 0.35);
   }
 
   .area-summary-header {
-    background: var(--gray-800);
-    padding: 12px 20px;
+    background: linear-gradient(90deg, var(--gray-800), var(--gray-900));
+    padding: 14px 20px;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    border-bottom: 1px solid var(--gray-700);
   }
 
   .area-summary-title {
@@ -626,11 +724,15 @@
     font-size: 11px;
     color: var(--gray-400);
     letter-spacing: 1px;
+    border: 1px solid var(--gray-700);
+    padding: 4px 8px;
+    background: var(--black);
   }
 
   .summary-table {
     width: 100%;
     border-collapse: collapse;
+    margin: 12px 0 16px;
   }
 
   .summary-table th {
@@ -660,12 +762,30 @@
     color: var(--gray-400);
     letter-spacing: 1px;
     text-transform: uppercase;
+    width: 190px;
   }
 
   .summary-table .qty-cell {
-    color: var(--red);
+    color: var(--white);
     font-weight: 600;
     font-size: 14px;
+    width: 90px;
+  }
+
+  .summary-equipo-cell {
+    color: var(--white);
+    font-weight: 600;
+  }
+
+  .summary-qty-pill {
+    display: inline-flex;
+    min-width: 34px;
+    min-height: 24px;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(220, 38, 38, 0.42);
+    background: rgba(220, 38, 38, 0.12);
+    color: var(--white);
   }
 
   .empty-area {
@@ -700,22 +820,26 @@
   /* ─── SEARCH BAR ─── */
   .search-bar {
     position: relative;
-    margin-bottom: 20px;
+    margin-bottom: 18px;
   }
 
   .search-bar input {
     width: 100%;
-    background: var(--gray-800);
-    border: 1px solid var(--gray-600);
+    background: var(--black);
+    border: 1px solid var(--gray-700);
     color: var(--white);
     font-family: var(--font-mono);
     font-size: 13px;
-    padding: 10px 16px 10px 40px;
+    padding: 12px 16px 12px 42px;
     outline: none;
-    transition: border-color 0.2s;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
   }
 
-  .search-bar input:focus { border-color: var(--red); }
+  .search-bar input:focus {
+    border-color: var(--red);
+    background: var(--gray-900);
+    box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.12);
+  }
 
   .search-bar::before {
     content: '🔍';
@@ -1073,10 +1197,11 @@
   .sala-tabs-bar {
     display: flex;
     align-items: center;
-    gap: 0;
+    gap: 6px;
     margin-bottom: 24px;
-    border-bottom: 2px solid var(--gray-700);
+    border-bottom: 1px solid var(--gray-800);
     flex-wrap: wrap;
+    padding-bottom: 6px;
   }
 
   .sala-tab {
@@ -1084,11 +1209,10 @@
     font-size: 14px;
     font-weight: 600;
     letter-spacing: 2px;
-    padding: 10px 18px;
-    background: transparent;
-    border: none;
+    padding: 10px 16px;
+    background: var(--gray-900);
+    border: 1px solid var(--gray-800);
     border-bottom: 2px solid transparent;
-    margin-bottom: -2px;
     color: var(--gray-400);
     cursor: pointer;
     transition: all 0.15s;
@@ -1101,6 +1225,7 @@
   .sala-tab.active {
     color: var(--white);
     border-bottom-color: var(--red);
+    border-color: var(--gray-700);
     background: var(--red-glow);
   }
 
@@ -1176,6 +1301,20 @@
     display: block;
     width: 6px; height: 6px;
     background: var(--red);
+  }
+
+  @media (max-width: 620px) {
+    .area-selector { gap: 6px; }
+    .area-btn { flex: 1 1 calc(50% - 6px); padding: 10px 8px; font-size: 12px; }
+    .equipo-row,
+    .equipo-row.kit-row {
+      grid-template-columns: 1fr 96px;
+      align-items: start;
+    }
+    .equipo-name { padding-left: 14px; }
+    .equipo-qty-wrap { justify-content: flex-end; padding-right: 10px; }
+    .equipo-obs-wrap { grid-column: 1 / -1; padding: 0 12px 9px 14px; }
+    .summary-table .cat-cell { width: auto; }
   }
 
   /* PDF pages hidden on screen */
@@ -1681,12 +1820,12 @@ const AREAS = {
       { cat: 'CONTROLADOR PTZ', items: ['PANASONIC','AVONIC','SWITCH DE RED'] },
       { cat: 'SWITCHERS', items: ['DATAVIDEO','ATEM 1080','ATEM 4K','ATEM ISO 8 +SSD +CANNON','ATEM ISO 4 +SSD +CANNON','ROSS CHICO','ROSS GRANDE','CCU'] },
       { cat: 'GRABADORAS', items: ['DATAVIDEO','HYPERDECK','AJA'] },
+      { cat: 'vMix', items: ['KIT VMIX','ASUS TUF','SERVIDOR RACKEADO','MOUSE','BASE DE REFRIGERACION','HUB','CAPTURADORA HDMI/SDI','AURICULARES','SWITCH POE','PLACA DE AUDIO','CABLES UTP','ADAPTADOR DE RED'] },
       { cat: 'MONITORES', items: ['KEN BROWN','SAMSUNG 24','TV LOGIC 24','TV LOGIC 18','TV LOGIC 32','MONITOR TOUCH DELL + PIE','SMALLHD','SAMSUNG 32'] },
       { cat: 'TRIPODES', items: ['MANFROTTO','E-IMAGE GA102 (GRANDE)','E-IMAGE AT-7402B (CHICO)','VINTEN','GIMBAL'] },
       { cat: 'GRIPS', items: ['BRAZO MAGICO','SOPORTE DE TECHO','TRIPODE ARAÑA'] },
-      { cat: 'SERVIDORES', items: ['ASUS TUF','SERVIDOR RACKEADO'] },
-      { cat: 'INTERFACES', items: ['AJA SDI/HDMI','DECIMATOR 1080','DECIMATOR 4K','BLACKMAGIC SDI/HDMI','BLACKMAGIC FIBRA/SDI','HOLLYLAND PYRO S','CAPTURADORA HDMI 1080','CAPTURADORA HDMI 4K','STREAM DECK CHICO','STREAM DECK GRANDE'] },
-      { cat: 'AUDIO', items: ['PLACA DE AUDIO VMIX','RODE OMNIDIRECCIONAL','SHOEPS SHOTGUN'] },
+      { cat: 'INTERFACES', items: ['AJA SDI/HDMI','DECIMATOR 1080','DECIMATOR 4K','BLACKMAGIC SDI/HDMI','BLACKMAGIC FIBRA/SDI','HOLLYLAND PYRO S','STREAM DECK CHICO','STREAM DECK GRANDE'] },
+      { cat: 'AUDIO', items: ['RODE OMNIDIRECCIONAL','SHOEPS SHOTGUN'] },
       { cat: 'INTERCOM', items: ['HOLLYLAND SOLIDCOM C1','INTERCOM CABLEADO'] },
       { cat: 'LUCES', items: ['FRESNEL ARRI L5-C','SKYPANEL','KINO FLO'] },
       { cat: 'CABLES DE VIDEO', items: ['SDI 50','SDI 30','SDI 25','FIBRA OPTICA 50','FIBRA OPTICA 100','FIBRA OPTICA 200','UTP 50','UTP 25','UTP 100','CABLES 12G'] },
@@ -1756,6 +1895,21 @@ let quantities = {};
 let observations = {};
 let eventId = createEventId();
 
+const VMIX_CATEGORY = 'vMix';
+const VMIX_KIT_ITEM = 'KIT VMIX';
+const VMIX_KIT_ITEMS = [
+  { cat: VMIX_CATEGORY, item: 'ASUS TUF', qty: 1 },
+  { cat: VMIX_CATEGORY, item: 'MOUSE', qty: 1 },
+  { cat: VMIX_CATEGORY, item: 'HUB', qty: 1 },
+  { cat: VMIX_CATEGORY, item: 'BASE DE REFRIGERACION', qty: 1 },
+  { cat: VMIX_CATEGORY, item: 'CAPTURADORA HDMI/SDI', qty: 2 },
+  { cat: VMIX_CATEGORY, item: 'AURICULARES', qty: 1 },
+  { cat: VMIX_CATEGORY, item: 'SWITCH POE', qty: 1 },
+  { cat: VMIX_CATEGORY, item: 'CABLES UTP', qty: 3 },
+  { cat: VMIX_CATEGORY, item: 'PLACA DE AUDIO', qty: 1 },
+  { cat: VMIX_CATEGORY, item: 'ADAPTADOR DE RED', qty: 1 },
+];
+
 function createEventId() {
   return window.crypto?.randomUUID?.() || `event-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 }
@@ -1764,10 +1918,81 @@ function createEventId() {
 //  INIT
 // ════════════════════════════════════════
 
+function buildItemKey(salaId, areaKey, cat, item) {
+  return `${salaId}::${areaKey}::${cat}::${item}`;
+}
+
+function isVmixKitKey(key) {
+  return key.includes(`::cctv::${VMIX_CATEGORY}::${VMIX_KIT_ITEM}`);
+}
+
+function isVmixKitItem(areaKey, cat, item) {
+  return areaKey === 'cctv' && cat === VMIX_CATEGORY && item === VMIX_KIT_ITEM;
+}
+
+function setRowSelected(input, selected) {
+  input?.closest('.equipo-row')?.classList.toggle('has-value', selected);
+}
+
+function setQuantity(key, value) {
+  const input = document.querySelector(`input.equipo-qty[data-key="${key}"], input.equipo-kit-check[data-key="${key}"]`);
+  const obsEl = document.querySelector(`input.equipo-obs[data-key="${key}"]`);
+  if (value > 0) {
+    quantities[key] = value;
+    if (input) {
+      if (input.type === 'checkbox') {
+        input.checked = true;
+        input.closest('.kit-check')?.classList.add('has-value');
+        input.closest('.kit-check')?.querySelector('span')?.replaceChildren(document.createTextNode('✓'));
+      } else {
+        input.value = value;
+        input.closest('.qty-stepper')?.classList.add('has-value');
+      }
+      input.classList.add('has-value');
+      setRowSelected(input, true);
+    }
+    if (obsEl) obsEl.classList.add('enabled');
+  } else {
+    delete quantities[key];
+    if (input) {
+      if (input.type === 'checkbox') {
+        input.checked = false;
+        input.closest('.kit-check')?.classList.remove('has-value');
+        input.closest('.kit-check')?.querySelector('span')?.replaceChildren(document.createTextNode(''));
+      } else {
+        input.value = '';
+        input.closest('.qty-stepper')?.classList.remove('has-value');
+      }
+      input.classList.remove('has-value');
+      setRowSelected(input, false);
+    }
+    if (obsEl) { obsEl.classList.remove('enabled'); obsEl.value = ''; delete observations[key]; }
+  }
+}
+
+function applyVmixKit(salaId) {
+  for (const entry of VMIX_KIT_ITEMS) {
+    const key = buildItemKey(salaId, 'cctv', entry.cat, entry.item);
+    setQuantity(key, Math.max(Number(quantities[key]) || 0, entry.qty));
+  }
+}
+
+function toggleVmixKit(key, salaId, checked) {
+  setQuantity(key, checked ? 1 : 0);
+  if (checked) applyVmixKit(salaId);
+  updateAreaCountsForSala(salaId);
+  renderSalaTabs();
+  updateFloatSummary();
+  saveState();
+}
+
 window.addEventListener('DOMContentLoaded', async () => {
   const onlineInventoryLoaded = await loadOnlineInventory();
   if (!onlineInventoryLoaded) loadCustomInventory();
+  ensureVmixInventory();
+  saveCustomInventory();
   const recovered = loadState();
+  migrateLegacyVmixQuantities();
   if (salas.length === 0) addSala('SALA A', false);
   renderSalaTabs();
   renderAllSalaContents();
@@ -1907,47 +2132,68 @@ function buildAreaForSala(salaId, areaKey) {
     container.appendChild(catDiv);
     for (const item of cat.items) {
       const key = `${salaId}::${areaKey}::${cat.cat}::${item}`;
+      const isKit = isVmixKitItem(areaKey, cat.cat, item);
       const row = document.createElement('div');
-      row.className = 'equipo-row';
+      row.className = `equipo-row${isKit ? ' kit-row' : ''}`;
       row.dataset.name = item.toLowerCase();
       row.dataset.cat = cat.cat.toLowerCase();
 
       const nameDiv = document.createElement('div');
       nameDiv.className = 'equipo-name';
-      nameDiv.textContent = item;
+      if (isKit) {
+        nameDiv.innerHTML = '<span class="kit-title">KIT VMIX</span><span class="kit-subtitle">Carga automatica ASUS TUF + accesorios vMix</span>';
+      } else {
+        nameDiv.textContent = item;
+      }
 
       const wrapDiv = document.createElement('div');
       wrapDiv.className = 'equipo-qty-wrap';
 
-      const stepper = document.createElement('div');
-      stepper.className = 'qty-stepper';
-      stepper.dataset.key = key;
+      if (isKit) {
+        const checkLabel = document.createElement('label');
+        checkLabel.className = 'kit-check';
+        checkLabel.dataset.key = key;
 
-      const btnMinus = document.createElement('button');
-      btnMinus.className = 'qty-btn';
-      btnMinus.tabIndex = -1;
-      btnMinus.innerHTML = '&#8722;';
-      btnMinus.addEventListener('click', () => stepQty(key, salaId, -1));
+        const kitInput = document.createElement('input');
+        kitInput.type = 'checkbox';
+        kitInput.className = 'equipo-kit-check';
+        kitInput.dataset.key = key;
+        kitInput.addEventListener('change', () => toggleVmixKit(key, salaId, kitInput.checked));
 
-      const qtyInput = document.createElement('input');
-      qtyInput.type = 'number';
-      qtyInput.className = 'equipo-qty';
-      qtyInput.min = '0';
-      qtyInput.placeholder = '0';
-      qtyInput.dataset.key = key;
-      qtyInput.addEventListener('input', () => { onQtyInput(qtyInput); onManualChange(qtyInput, salaId); });
-      qtyInput.addEventListener('blur', () => onManualChange(qtyInput, salaId));
+        const checkMark = document.createElement('span');
+        checkLabel.append(kitInput, checkMark);
+        wrapDiv.appendChild(checkLabel);
+      } else {
+        const stepper = document.createElement('div');
+        stepper.className = 'qty-stepper';
+        stepper.dataset.key = key;
 
-      const btnPlus = document.createElement('button');
-      btnPlus.className = 'qty-btn';
-      btnPlus.tabIndex = -1;
-      btnPlus.textContent = '+';
-      btnPlus.addEventListener('click', () => stepQty(key, salaId, 1));
+        const btnMinus = document.createElement('button');
+        btnMinus.className = 'qty-btn';
+        btnMinus.tabIndex = -1;
+        btnMinus.innerHTML = '&#8722;';
+        btnMinus.addEventListener('click', () => stepQty(key, salaId, -1));
 
-      stepper.appendChild(btnMinus);
-      stepper.appendChild(qtyInput);
-      stepper.appendChild(btnPlus);
-      wrapDiv.appendChild(stepper);
+        const qtyInput = document.createElement('input');
+        qtyInput.type = 'number';
+        qtyInput.className = 'equipo-qty';
+        qtyInput.min = '0';
+        qtyInput.placeholder = '0';
+        qtyInput.dataset.key = key;
+        qtyInput.addEventListener('input', () => { onQtyInput(qtyInput); onManualChange(qtyInput, salaId); });
+        qtyInput.addEventListener('blur', () => onManualChange(qtyInput, salaId));
+
+        const btnPlus = document.createElement('button');
+        btnPlus.className = 'qty-btn';
+        btnPlus.tabIndex = -1;
+        btnPlus.textContent = '+';
+        btnPlus.addEventListener('click', () => stepQty(key, salaId, 1));
+
+        stepper.appendChild(btnMinus);
+        stepper.appendChild(qtyInput);
+        stepper.appendChild(btnPlus);
+        wrapDiv.appendChild(stepper);
+      }
 
       const obsWrap = document.createElement('div');
       obsWrap.className = 'equipo-obs-wrap';
@@ -2035,13 +2281,16 @@ function stepQty(key, salaId, delta) {
     quantities[key] = next;
     input.classList.add('has-value');
     input.closest('.qty-stepper')?.classList.add('has-value');
+    setRowSelected(input, true);
     if (obsEl2) obsEl2.classList.add('enabled');
   } else {
     delete quantities[key];
     input.classList.remove('has-value');
     input.closest('.qty-stepper')?.classList.remove('has-value');
+    setRowSelected(input, false);
     if (obsEl2) { obsEl2.classList.remove('enabled'); obsEl2.value = ''; delete observations[key]; }
   }
+  if (isVmixKitKey(key) && quantities[key]) applyVmixKit(salaId);
   updateAreaCountsForSala(salaId);
   renderSalaTabs();
   updateFloatSummary();
@@ -2057,14 +2306,17 @@ function onManualChange(input, salaId) {
     quantities[key] = val;
     input.classList.add('has-value');
     if (stepper) stepper.classList.add('has-value');
+    setRowSelected(input, true);
     if (obsEl) obsEl.classList.add('enabled');
   } else {
     delete quantities[key];
     input.value = '';
     input.classList.remove('has-value');
     if (stepper) stepper.classList.remove('has-value');
+    setRowSelected(input, false);
     if (obsEl) { obsEl.classList.remove('enabled'); obsEl.value = ''; delete observations[key]; }
   }
+  if (isVmixKitKey(key) && quantities[key]) applyVmixKit(salaId);
   updateAreaCountsForSala(salaId);
   renderSalaTabs();
   updateFloatSummary();
@@ -2202,11 +2454,19 @@ function getEventSnapshot() {
 
 function restoreQuantities() {
   for (const [key, val] of Object.entries(quantities)) {
-    const input = document.querySelector(`input.equipo-qty[data-key="${key}"]`);
+    const input = document.querySelector(`input.equipo-qty[data-key="${key}"], input.equipo-kit-check[data-key="${key}"]`);
     if (input) {
-      input.value = val;
+      if (input.type === 'checkbox') {
+        input.checked = true;
+        input.closest('.kit-check')?.classList.add('has-value');
+        input.closest('.kit-check')?.querySelector('span')?.replaceChildren(document.createTextNode('✓'));
+        applyVmixKit(key.split('::')[0]);
+      } else {
+        input.value = val;
+        input.closest('.qty-stepper')?.classList.add('has-value');
+      }
       input.classList.add('has-value');
-      input.closest('.qty-stepper')?.classList.add('has-value');
+      setRowSelected(input, true);
       const obsEl = document.querySelector(`input.equipo-obs[data-key="${key}"]`);
       if (obsEl) obsEl.classList.add('enabled');
     }
@@ -2251,6 +2511,13 @@ function clearCurrentSalaArea() {
     if (key.startsWith(prefix)) delete quantities[key];
   }
   document.querySelectorAll(`#${currentSalaId}-area-${currentArea} .equipo-qty`).forEach(i => { i.value=''; i.classList.remove('has-value'); });
+  document.querySelectorAll(`#${currentSalaId}-area-${currentArea} .equipo-row`).forEach(row => row.classList.remove('has-value'));
+  document.querySelectorAll(`#${currentSalaId}-area-${currentArea} .equipo-kit-check`).forEach(i => {
+    i.checked = false;
+    i.classList.remove('has-value');
+    i.closest('.kit-check')?.classList.remove('has-value');
+    i.closest('.kit-check')?.querySelector('span')?.replaceChildren(document.createTextNode(''));
+  });
   document.querySelectorAll(`#${currentSalaId}-area-${currentArea} .qty-stepper`).forEach(s => s.classList.remove('has-value'));
   updateAreaCountsForSala(currentSalaId);
   renderSalaTabs();
@@ -2345,7 +2612,7 @@ function buildSummary() {
         for (const cat of items) {
           for (const item of cat.items) {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td class="cat-cell">${cat.cat}</td><td>${item.name}</td><td class="qty-cell" style="text-align:center">${item.qty}</td>`;
+            tr.innerHTML = `<td class="cat-cell">${cat.cat}</td><td class="summary-equipo-cell">${item.name}</td><td class="qty-cell" style="text-align:center"><span class="summary-qty-pill">${item.qty}</span></td>`;
             tbody.appendChild(tr);
           }
         }
@@ -2516,6 +2783,7 @@ function importExcel(input) {
         });
       }
 
+      migrateLegacyVmixQuantities();
       restoreQuantities();
       updateAllCounts();
       saveState();
@@ -3063,9 +3331,10 @@ async function loadOnlineInventory() {
       await seedOnlineInventory();
       data = await fetchOnlineInventoryData();
     } else {
+      await seedOnlineInventory();
       const missingAreas = Object.keys(DEFAULT_AREAS).filter(areaKey => !data.categories.some(cat => cat.area === areaKey));
       for (const areaKey of missingAreas) await seedOnlineInventory(areaKey);
-      if (missingAreas.length) data = await fetchOnlineInventoryData();
+      data = await fetchOnlineInventoryData();
     }
     applyOnlineInventory(data.categories, data.items);
     inventoryOnline = true;
@@ -3089,6 +3358,59 @@ function loadCustomInventory() {
       if (saved[key]) AREAS[key].data = saved[key];
     }
   } catch(e) {}
+}
+
+function ensureVmixInventory() {
+  const cctv = AREAS.cctv;
+  if (!cctv) return;
+  const requiredItems = ['KIT VMIX','ASUS TUF','SERVIDOR RACKEADO','MOUSE','BASE DE REFRIGERACION','HUB','CAPTURADORA HDMI/SDI','AURICULARES','SWITCH POE','PLACA DE AUDIO','CABLES UTP','ADAPTADOR DE RED'];
+  let vmixIndex = cctv.data.findIndex(cat => cat.cat === VMIX_CATEGORY || cat.cat.toUpperCase() === 'VMIX');
+  let vmixCat = vmixIndex >= 0 ? cctv.data[vmixIndex] : null;
+  if (!vmixCat) {
+    vmixCat = { cat: VMIX_CATEGORY, items: [] };
+  } else {
+    cctv.data.splice(vmixIndex, 1);
+  }
+  const monitoresIndex = cctv.data.findIndex(cat => cat.cat === 'MONITORES');
+  cctv.data.splice(monitoresIndex >= 0 ? monitoresIndex : cctv.data.length, 0, vmixCat);
+  vmixCat.cat = VMIX_CATEGORY;
+  vmixCat.items = vmixCat.items.filter(item => item !== 'PLACA DE AUDIO VMIX' && item !== 'CAPTURADORA HDMI 1080' && item !== 'CAPTURADORA HDMI 4K');
+  requiredItems.forEach(item => {
+    if (!vmixCat.items.includes(item)) vmixCat.items.push(item);
+  });
+
+  const interfacesCat = cctv.data.find(cat => cat.cat === 'INTERFACES');
+  if (interfacesCat) interfacesCat.items = interfacesCat.items.filter(item => item !== 'CAPTURADORA HDMI 1080' && item !== 'CAPTURADORA HDMI 4K');
+
+  const audioCat = cctv.data.find(cat => cat.cat === 'AUDIO');
+  if (audioCat) audioCat.items = audioCat.items.filter(item => item !== 'PLACA DE AUDIO VMIX' && item !== 'PLACA DE AUDIO');
+
+  cctv.data = cctv.data.filter(cat => cat.cat !== 'SERVIDORES');
+}
+
+function migrateLegacyVmixQuantities() {
+  const moves = [
+    { fromCat: 'SERVIDORES', fromItem: 'ASUS TUF', toCat: VMIX_CATEGORY, toItem: 'ASUS TUF' },
+    { fromCat: 'SERVIDORES', fromItem: 'SERVIDOR RACKEADO', toCat: VMIX_CATEGORY, toItem: 'SERVIDOR RACKEADO' },
+    { fromCat: 'INTERFACES', fromItem: 'CAPTURADORA HDMI 1080', toCat: VMIX_CATEGORY, toItem: 'CAPTURADORA HDMI/SDI', combine: true },
+    { fromCat: 'INTERFACES', fromItem: 'CAPTURADORA HDMI 4K', toCat: VMIX_CATEGORY, toItem: 'CAPTURADORA HDMI/SDI', combine: true },
+    { fromCat: 'AUDIO', fromItem: 'PLACA DE AUDIO VMIX', toCat: VMIX_CATEGORY, toItem: 'PLACA DE AUDIO' },
+    { fromCat: 'AUDIO', fromItem: 'PLACA DE AUDIO', toCat: VMIX_CATEGORY, toItem: 'PLACA DE AUDIO' },
+  ];
+
+  for (const sala of salas) {
+    for (const move of moves) {
+      const fromKey = buildItemKey(sala.id, 'cctv', move.fromCat, move.fromItem);
+      if (!quantities[fromKey]) continue;
+      const toKey = buildItemKey(sala.id, 'cctv', move.toCat, move.toItem);
+      const fromQty = Number(quantities[fromKey]) || 0;
+      const toQty = Number(quantities[toKey]) || 0;
+      quantities[toKey] = move.combine ? toQty + fromQty : Math.max(toQty, fromQty);
+      if (observations[fromKey] && !observations[toKey]) observations[toKey] = observations[fromKey];
+      delete quantities[fromKey];
+      delete observations[fromKey];
+    }
+  }
 }
 
 function saveCustomInventory() {
@@ -3469,6 +3791,7 @@ function duplicateStoredEvent(record) {
   eventId = createEventId();
   currentSalaId = salas[0].id;
   currentArea = 'cctv';
+  migrateLegacyVmixQuantities();
   document.getElementById('sala-contents').replaceChildren();
   renderSalaTabs();
   renderAllSalaContents();
