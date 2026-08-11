@@ -5,6 +5,8 @@ window.PDF_ARCHIVE_CONFIG = Object.freeze({
   SUPABASE_TABLE: 'pdf_documents',
   INVENTORY_CATEGORIES_TABLE: 'inventory_categories',
   INVENTORY_ITEMS_TABLE: 'inventory_items',
+  INVENTORY_COMBOS_TABLE: 'inventory_combos',
+  INVENTORY_COMBO_ITEMS_TABLE: 'inventory_combo_items',
   FREELANCERS_TABLE: 'freelancers',
   DEPOSIT_CHECKLISTS_TABLE: 'deposit_checklists',
   DEPOSIT_CHECKLIST_ITEMS_TABLE: 'deposit_checklist_items',
