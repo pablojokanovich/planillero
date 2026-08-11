@@ -147,6 +147,8 @@
     .btn-generar-all { padding: 10px 24px; border-radius: 3px; border: none; cursor: pointer; font-weight: 700; font-size: 13px; letter-spacing: 0.5px; text-transform: uppercase; font-family: 'Barlow Condensed', sans-serif; color: #fff; background: var(--red); transition: background .15s, opacity .2s; white-space: nowrap; }
     .btn-generar-all:hover { background: var(--red-dark); }
     .btn-generar-all:disabled { opacity: 0.3; cursor: not-allowed; }
+    .generate-bottom-wrap { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--border); }
+    .generate-bottom-wrap .btn-generar-all { width: 100%; padding: 13px 24px; }
 
     /* CITACIONES */
     .citations-grid { display: flex; flex-direction: column; gap: 32px; }
@@ -293,6 +295,10 @@
         <button class="btn-primary" id="btn-guardar-fl">Guardar</button>
         <button class="btn-sec" id="btn-cancelar-add">Cancelar</button>
       </div>
+    </div>
+
+    <div class="generate-bottom-wrap">
+      <button class="btn-generar-all" id="btn-generar-all-bottom" disabled>Generar citaciones â†’</button>
     </div>
   </div>
 
@@ -843,7 +849,7 @@
   function checkGenerarBtn(){
     const eventOk=['f-evento','f-orden','f-lugar'].every(id=>document.getElementById(id).value.trim()) && days.length>0;
     const selOk=Object.keys(selected).length>0;
-    document.getElementById('btn-generar-all').disabled=!(eventOk&&selOk);
+    document.querySelectorAll('.btn-generar-all').forEach(btn => { btn.disabled=!(eventOk&&selOk); });
   }
   ['f-evento','f-orden','f-lugar'].forEach(id=>document.getElementById(id).addEventListener('input',checkGenerarBtn));
 
@@ -960,7 +966,7 @@
   }
 
   // ---- GENERATE ----
-  document.getElementById('btn-generar-all').onclick=()=>{
+  function generarCitaciones(){
     const evento=document.getElementById('f-evento').value.trim();
     const orden=document.getElementById('f-orden').value.trim();
     const lugar=document.getElementById('f-lugar').value.trim();
@@ -1177,7 +1183,11 @@
     };
 
     showView('citaciones');
-  };
+  }
+
+  document.querySelectorAll('.btn-generar-all').forEach(btn => {
+    btn.onclick=generarCitaciones;
+  });
 
   function buildMensaje(fl, puesto, sala, evento, orden, lugar, flDays) {
     const daysText=flDays.map(d=>{
