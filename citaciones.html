@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>PLANILLAS Y CITACIONES CONGRESS RENTAL</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='18' fill='%23CC1A1A'/><rect x='22' y='18' width='56' height='64' rx='6' fill='white'/><rect x='35' y='12' width='10' height='16' rx='4' fill='%23CC1A1A'/><rect x='55' y='12' width='10' height='16' rx='4' fill='%23CC1A1A'/><rect x='30' y='42' width='40' height='4' rx='2' fill='%23CC1A1A'/><rect x='30' y='54' width='30' height='4' rx='2' fill='%23CC1A1A'/><rect x='30' y='66' width='20' height='4' rx='2' fill='%23CC1A1A'/></svg>" />
-  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script src="supabase-config.js"></script>
@@ -15,22 +15,27 @@
       --red: #e8000a; --red-dark: #b30008;
       --black: #0a0a0a; --dark: #141414; --dark2: #202020;
       --border: #2d2d2d; --text: #f5f5f5; --muted: #929292; --subtle: #555555;
+      --red-glow: rgba(232,0,10,0.15);
+      --gray-900: #111111; --gray-800: #1A1A1A; --gray-700: #2A2A2A; --gray-600: #3A3A3A; --gray-400: #888888; --gray-300: #BBBBBB; --gray-100: #F0F0F0;
+      --white: #FFFFFF;
+      --font-display: 'Rajdhani', sans-serif;
+      --font-mono: 'IBM Plex Mono', monospace;
+      --font-body: 'IBM Plex Sans', sans-serif;
     }
     body { font-family: 'Barlow', sans-serif; background: var(--black); color: var(--text); min-height: 100vh; }
     body::before { content:''; position:fixed; inset:0; z-index:-1; pointer-events:none; opacity:.2; background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px); background-size:32px 32px; }
 
-    header { background: var(--black); border-bottom: 2px solid var(--red); padding: 0 24px; position: sticky; top: 0; z-index: 100; }
-    .header-inner { max-width: 1100px; margin: 0 auto; display: flex; align-items: center; gap: 16px; height: 64px; }
-    .header-logo { height: 44px; width: auto; object-fit: contain; }
-    .header-divider { width: 1px; height: 32px; background: var(--border); }
-    .header-title { font-family: 'Barlow Condensed', sans-serif; font-weight: 800; font-size: 15px; letter-spacing: 1px; text-transform: uppercase; }
-    .header-sub { font-size: 10px; color: var(--muted); margin-top: 2px; letter-spacing: 1px; font-weight: 700; }
-
-    .header-copy { min-width: 210px; }
-    .main-nav { display:flex; align-items:center; gap:5px; margin-left:auto; padding:4px; background:#101010; border:1px solid #3a3a3a; box-shadow:0 5px 18px rgba(0,0,0,.32); }
-    .main-nav a { min-height:38px; display:flex; align-items:center; justify-content:center; color:#f2f2f2; background:#202020; text-decoration:none; border:1px solid #3a3a3a; padding:10px 15px; font-family:'Barlow Condensed',sans-serif; font-size:12px; font-weight:800; letter-spacing:1.15px; text-transform:uppercase; white-space:nowrap; transition:background .16s,border-color .16s,color .16s,transform .16s; }
-    .main-nav a:hover { color:#fff; background:#292929; border-color:#777; transform:translateY(-1px); }
-    .main-nav a.active { color:#fff; background:var(--red); border-color:#ff4148; box-shadow:0 0 0 1px rgba(232,0,10,.25),0 4px 14px rgba(232,0,10,.28); }
+    .site-header { position: sticky; top: 0; z-index: 100; background: var(--black); border-bottom: 2px solid var(--red); display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 0 32px; height: 64px; }
+    .logo { display: flex; align-items: center; gap: 12px; color: var(--white); font-family: var(--font-display); font-size: 22px; font-weight: 700; letter-spacing: 2px; }
+    .logo img { height: 44px; width: auto; display: block; object-fit: contain; }
+    .logo-badge { background: var(--red); color: var(--white); font-family: var(--font-mono); font-size: 9px; padding: 4px 8px; letter-spacing: 1.2px; line-height: 1.25; font-weight: 700; display: flex; flex-direction: column; }
+    .logo-badge strong { font: inherit; opacity: .82; }
+    .header-right { font-family: var(--font-mono); font-size: 11px; color: var(--gray-400); letter-spacing: 1px; }
+    .header-actions { display: flex; align-items: center; gap: 14px; }
+    .main-nav { display:flex; align-items:center; gap:5px; padding:4px; background:#101010; border:1px solid var(--gray-600); box-shadow:0 5px 18px rgba(0,0,0,.32); }
+    .main-nav a { min-height:38px; display:flex; align-items:center; justify-content:center; color:#f2f2f2; background:var(--gray-800); text-decoration:none; border:1px solid var(--gray-600); padding:10px 15px; font-family:var(--font-mono); font-size:11px; font-weight:700; letter-spacing:1.15px; text-transform:uppercase; white-space:nowrap; transition:background .16s,border-color .16s,color .16s,transform .16s; }
+    .main-nav a:hover { color:var(--white); background:#292929; border-color:#777; transform:translateY(-1px); }
+    .main-nav a.active { color:var(--white); background:var(--red); border-color:#ff4148; box-shadow:0 0 0 1px rgba(232,0,10,.25),0 4px 14px rgba(232,0,10,.28); }
 
     main { max-width: 900px; margin: 0 auto; padding: 40px 24px 80px; }
     .view { display: none; } .view.active { display: block; }
@@ -202,12 +207,14 @@
     .summary-puesto { font-size:12px; color:var(--red); font-weight:600; }
     .app-credit { padding:0 20px 28px; color:rgba(187,187,187,.42); font-size:10px; letter-spacing:1px; text-align:center; }
     @media (max-width: 760px) {
-      header { padding: 0 16px; }
-      .header-inner { height:auto; min-height:64px; padding:9px 0; flex-wrap:wrap; }
-      .header-logo { height:36px; }
-      .header-title { font-size:13px; }
+      .site-header { height:auto; min-height:64px; padding:10px 16px; flex-wrap:wrap; }
+      .header-right { display:none; }
+      .header-actions { width:100%; gap:7px; flex-wrap:wrap; }
       .main-nav { order:3; width:100%; overflow-x:auto; }
-      .main-nav a { flex:1; padding:10px 9px; font-size:11px; }
+      .main-nav a { flex:1; padding:10px 9px; font-size:10px; }
+      .logo { gap:8px; }
+      .logo img { height:36px; }
+      .logo-badge { font-size:8px; letter-spacing:.8px; }
       main { padding:28px 16px 60px; }
       .day-row { flex-wrap:wrap; gap:8px; }
       .day-tipo-select { order:3; width:100%; }
@@ -218,14 +225,13 @@
 </head>
 <body>
 
-<header>
-  <div class="header-inner">
-    <img class="header-logo" id="header-logo-img" src="" alt="Planillas y Citaciones Congress Rental" />
-    <div class="header-divider"></div>
-    <div class="header-copy">
-      <div class="header-title">Planillas y Citaciones</div>
-      <div class="header-sub">Congress Rental</div>
-    </div>
+<header class="site-header">
+  <div class="logo">
+    <img id="header-logo-img" src="" alt="Congress Rental" />
+    <span class="logo-badge"><span>PLANILLAS Y CITACIONES</span><strong>CONGRESS RENTAL</strong></span>
+  </div>
+  <div class="header-actions">
+    <div class="header-right">CITACIONES</div>
     <nav class="main-nav" aria-label="Navegación principal">
       <a href="index.html">Inicio</a>
       <a href="archivo.html">Planillas Hechas</a>
