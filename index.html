@@ -1612,6 +1612,18 @@
   .combo-admin-name { font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: 1px; color: var(--white); }
   .combo-admin-meta { margin-top: 3px; font-family: var(--font-mono); font-size: 10px; color: var(--gray-500); line-height: 1.4; }
   .combo-admin-actions { display: flex; gap: 6px; align-items: center; }
+  .combo-area-group { margin-top: 14px; }
+  .combo-area-group:first-child { margin-top: 0; }
+  .combo-area-heading {
+    font-family: var(--font-display);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--gray-300);
+    border-bottom: 1px solid var(--gray-700);
+    padding-bottom: 6px;
+    margin-bottom: 4px;
+  }
   .combo-edit-btn {
     background: var(--gray-800);
     border: 1px solid var(--gray-600);
@@ -3865,7 +3877,20 @@ function renderCombosAdminPanel(useCurrentForm = true) {
   if (!combos.length) {
     list.innerHTML = '<div class="admin-empty">Todavia no hay combos creados.</div>';
   } else {
-    combos.forEach(combo => {
+    const areaOrder = Object.keys(AREAS);
+    const sortedCombos = [...combos].sort((a, b) => {
+      const areaDiff = areaOrder.indexOf(a.areaKey) - areaOrder.indexOf(b.areaKey);
+      return areaDiff || a.cat.localeCompare(b.cat) || a.name.localeCompare(b.name);
+    });
+    let lastComboArea = null;
+    sortedCombos.forEach(combo => {
+      if (combo.areaKey !== lastComboArea) {
+        const heading = document.createElement('div');
+        heading.className = 'combo-area-heading';
+        heading.textContent = AREAS[combo.areaKey]?.label || combo.areaKey;
+        list.appendChild(heading);
+        lastComboArea = combo.areaKey;
+      }
       const row = document.createElement('div');
       row.className = 'combo-admin-row';
       row.innerHTML = `
