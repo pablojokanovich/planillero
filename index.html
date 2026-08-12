@@ -1611,6 +1611,18 @@
   .combo-admin-row:last-child { border-bottom: none; }
   .combo-admin-name { font-family: var(--font-display); font-size: 15px; font-weight: 700; letter-spacing: 1px; color: var(--white); }
   .combo-admin-meta { margin-top: 3px; font-family: var(--font-mono); font-size: 10px; color: var(--gray-500); line-height: 1.4; }
+  .combo-admin-actions { display: flex; gap: 6px; align-items: center; }
+  .combo-edit-btn {
+    background: var(--gray-800);
+    border: 1px solid var(--gray-600);
+    color: var(--gray-200);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 1px;
+    padding: 6px 8px;
+    cursor: pointer;
+  }
+  .combo-edit-btn:hover { border-color: var(--red); color: var(--white); }
   .combo-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .combo-form-grid .full { grid-column: 1 / -1; }
   .combo-field label {
@@ -3732,6 +3744,8 @@ function checkAdminPass() {
 
 let currentAdminArea = 'cctv';
 let comboDraftItems = [];
+let editingComboId = null;
+let comboFormState = null;
 
 function htmlEscape(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
@@ -3769,18 +3783,51 @@ function itemOptions(areaKey, catName, selected = '') {
   return (cat?.items || []).filter(item => !isComboName(areaKey, catName, item)).map(item => `<option value="${htmlEscape(item)}"${item === selected ? ' selected' : ''}>${htmlEscape(item)}</option>`).join('');
 }
 
-function renderCombosAdminPanel() {
+function currentFieldValue(id, fallback = '') {
+  const field = document.getElementById(id);
+  return field ? field.value : fallback;
+}
+
+function collectComboFormState() {
+  const comboArea = currentFieldValue('combo-area', comboFormState?.areaKey || 'cctv');
+  const comboItemArea = currentFieldValue('combo-item-area', comboFormState?.itemArea || comboArea);
+  comboFormState = {
+    name: currentFieldValue('combo-name', comboFormState?.name || ''),
+    areaKey: comboArea,
+    cat: currentFieldValue('combo-cat', comboFormState?.cat || ''),
+    description: currentFieldValue('combo-desc', comboFormState?.description || ''),
+    itemArea: comboItemArea,
+    itemCat: currentFieldValue('combo-item-cat', comboFormState?.itemCat || ''),
+    itemQty: currentFieldValue('combo-item-qty', comboFormState?.itemQty || '1'),
+  };
+}
+
+function resetComboForm() {
+  editingComboId = null;
+  comboFormState = null;
+  comboDraftItems = [];
+}
+
+function renderCombosAdminPanel(useCurrentForm = true) {
   const container = document.getElementById('admin-panel-combos');
   if (!container) return;
-  const targetArea = document.getElementById('combo-area')?.value || 'cctv';
-  const selectedTargetCat = document.getElementById('combo-cat')?.value || '';
+  if (useCurrentForm) collectComboFormState();
+  const editingCombo = combos.find(combo => combo.id === editingComboId) || null;
+  const targetArea = comboFormState?.areaKey || editingCombo?.areaKey || 'cctv';
+  const selectedTargetCat = comboFormState?.cat || editingCombo?.cat || '';
   const targetCat = (AREAS[targetArea]?.data || []).some(cat => cat.cat === selectedTargetCat) ? selectedTargetCat : AREAS[targetArea]?.data[0]?.cat || '';
-  const itemArea = document.getElementById('combo-item-area')?.value || targetArea;
-  const selectedItemCat = document.getElementById('combo-item-cat')?.value || '';
+  const itemArea = comboFormState?.itemArea || targetArea;
+  const selectedItemCat = comboFormState?.itemCat || '';
   const itemCat = (AREAS[itemArea]?.data || []).some(cat => cat.cat === selectedItemCat) ? selectedItemCat : AREAS[itemArea]?.data[0]?.cat || '';
-  const draftName = document.getElementById('combo-name')?.value || '';
-  const draftDesc = document.getElementById('combo-desc')?.value || '';
-  const draftQty = document.getElementById('combo-item-qty')?.value || '1';
+  comboFormState = {
+    name: comboFormState?.name ?? editingCombo?.name ?? '',
+    areaKey: targetArea,
+    cat: targetCat,
+    description: comboFormState?.description ?? editingCombo?.description ?? '',
+    itemArea,
+    itemCat,
+    itemQty: comboFormState?.itemQty || '1',
+  };
 
   container.innerHTML = `
     <div class="combo-admin-grid">
@@ -3790,23 +3837,24 @@ function renderCombosAdminPanel() {
         <div id="combo-list"></div>
       </div>
       <div class="combo-admin-box">
-        <div class="combo-admin-title">NUEVO COMBO</div>
+        <div class="combo-admin-title">${editingCombo ? 'EDITAR COMBO' : 'NUEVO COMBO'}</div>
         <div class="combo-form-grid">
-          <div class="combo-field full"><label>NOMBRE</label><input id="combo-name" type="text" placeholder="Ej: KIT CAMARA 1" value="${htmlEscape(draftName)}"></div>
+          <div class="combo-field full"><label>NOMBRE</label><input id="combo-name" type="text" placeholder="Ej: KIT CAMARA 1" value="${htmlEscape(comboFormState.name)}"></div>
           <div class="combo-field"><label>AREA DONDE APARECE</label><select id="combo-area" onchange="renderCombosAdminPanel()">${areaOptions(targetArea)}</select></div>
           <div class="combo-field"><label>CATEGORIA DONDE APARECE</label><select id="combo-cat">${categoryOptions(targetArea, targetCat)}</select></div>
-          <div class="combo-field full"><label>DESCRIPCION</label><input id="combo-desc" type="text" placeholder="Texto chico debajo del nombre" value="${htmlEscape(draftDesc)}"></div>
+          <div class="combo-field full"><label>DESCRIPCION</label><input id="combo-desc" type="text" placeholder="Texto chico debajo del nombre" value="${htmlEscape(comboFormState.description)}"></div>
         </div>
         <div class="combo-admin-title" style="margin-top:16px">EQUIPOS DEL COMBO</div>
         <div class="combo-form-grid">
           <div class="combo-field"><label>AREA</label><select id="combo-item-area" onchange="renderCombosAdminPanel()">${areaOptions(itemArea)}</select></div>
           <div class="combo-field"><label>CATEGORIA</label><select id="combo-item-cat" onchange="renderCombosAdminPanel()">${categoryOptions(itemArea, itemCat)}</select></div>
           <div class="combo-field"><label>EQUIPO</label><select id="combo-item-name">${itemOptions(itemArea, itemCat)}</select></div>
-          <div class="combo-field"><label>CANTIDAD</label><input id="combo-item-qty" type="number" min="1" value="${htmlEscape(draftQty)}"></div>
+          <div class="combo-field"><label>CANTIDAD</label><input id="combo-item-qty" type="number" min="1" value="${htmlEscape(comboFormState.itemQty)}"></div>
         </div>
         <div style="display:flex;gap:8px;margin-top:10px">
           <button class="btn-add-item" type="button" onclick="addComboDraftItem()">+ AGREGAR EQUIPO</button>
-          <button class="btn-add-item" type="button" onclick="saveNewCombo()" style="margin-left:auto">GUARDAR COMBO</button>
+          ${editingCombo ? '<button class="btn-add-item" type="button" onclick="cancelComboEdit()">CANCELAR</button>' : ''}
+          <button class="btn-add-item" type="button" onclick="saveCombo()" style="margin-left:auto">${editingCombo ? 'GUARDAR CAMBIOS' : 'GUARDAR COMBO'}</button>
         </div>
         <div class="combo-draft-list" id="combo-draft-list"></div>
       </div>
@@ -3825,7 +3873,10 @@ function renderCombosAdminPanel() {
           <div class="combo-admin-name">${htmlEscape(combo.name)}</div>
           <div class="combo-admin-meta">${AREAS[combo.areaKey]?.label || combo.areaKey} / ${htmlEscape(combo.cat)} · ${combo.items.length} equipos<br>${htmlEscape(combo.description || '')}</div>
         </div>
-        <button class="btn-remove-item" title="Eliminar combo" onclick="removeCombo('${combo.id}')">&#215;</button>
+        <div class="combo-admin-actions">
+          <button class="combo-edit-btn" title="Editar combo" onclick="startComboEdit('${combo.id}')">EDITAR</button>
+          <button class="btn-remove-item" title="Eliminar combo" onclick="removeCombo('${combo.id}')">&#215;</button>
+        </div>
       `;
       list.appendChild(row);
     });
@@ -3853,6 +3904,7 @@ function renderComboDraftList() {
 }
 
 function addComboDraftItem() {
+  collectComboFormState();
   const areaKey = document.getElementById('combo-item-area')?.value;
   const cat = document.getElementById('combo-item-cat')?.value;
   const item = document.getElementById('combo-item-name')?.value;
@@ -3907,7 +3959,62 @@ async function deleteComboOnline(combo) {
   });
 }
 
-async function saveNewCombo() {
+async function updateComboOnline(combo) {
+  const updated = await inventoryFetch(`${SUPABASE_URL}/rest/v1/${INVENTORY_COMBOS_TABLE}?combo_key=eq.${encodeURIComponent(combo.id)}`, {
+    method: 'PATCH',
+    headers: inventoryHeaders('return=representation'),
+    body: JSON.stringify({
+      area: combo.areaKey,
+      category_name: combo.cat,
+      name: combo.name,
+      description: combo.description || '',
+    }),
+  });
+  const comboId = updated?.[0]?.id;
+  if (!comboId) throw new Error('No se pudo obtener el id del combo editado');
+  await inventoryFetch(`${SUPABASE_URL}/rest/v1/${INVENTORY_COMBO_ITEMS_TABLE}?combo_id=eq.${encodeURIComponent(comboId)}`, {
+    method: 'DELETE',
+    headers: inventoryHeaders('return=minimal'),
+  });
+  const itemRows = combo.items.map((item, index) => ({
+    combo_id: comboId,
+    item_area: item.areaKey || combo.areaKey,
+    category_name: item.cat,
+    item_name: item.item,
+    qty: item.qty,
+    sort_order: index,
+  }));
+  await inventoryFetch(`${SUPABASE_URL}/rest/v1/${INVENTORY_COMBO_ITEMS_TABLE}`, {
+    method: 'POST',
+    headers: inventoryHeaders('return=minimal'),
+    body: JSON.stringify(itemRows),
+  });
+}
+
+function startComboEdit(id) {
+  const combo = combos.find(row => row.id === id);
+  if (!combo) return;
+  editingComboId = id;
+  comboFormState = {
+    name: combo.name,
+    areaKey: combo.areaKey,
+    cat: combo.cat,
+    description: combo.description || '',
+    itemArea: combo.areaKey,
+    itemCat: combo.items[0]?.cat || combo.cat,
+    itemQty: '1',
+  };
+  comboDraftItems = combo.items.map(item => ({ ...item }));
+  renderCombosAdminPanel(false);
+}
+
+function cancelComboEdit() {
+  resetComboForm();
+  renderCombosAdminPanel(false);
+}
+
+async function saveCombo() {
+  collectComboFormState();
   const name = document.getElementById('combo-name')?.value.trim().toUpperCase();
   const areaKey = document.getElementById('combo-area')?.value;
   const cat = document.getElementById('combo-cat')?.value;
@@ -3916,23 +4023,27 @@ async function saveNewCombo() {
   if (!comboDraftItems.length) return showToast('Agregá al menos un equipo al combo.');
   const targetCat = (AREAS[areaKey]?.data || []).find(row => row.cat === cat);
   if (targetCat?.items.includes(name)) return showToast('Ese nombre ya existe como equipo en esa categoría.');
-  if (combos.some(combo => combo.areaKey === areaKey && combo.cat === cat && combo.name === name)) {
+  if (combos.some(combo => combo.id !== editingComboId && combo.areaKey === areaKey && combo.cat === cat && combo.name === name)) {
     return showToast('Ya existe un combo con ese nombre en esa categoría.');
   }
+  const existingCombo = combos.find(row => row.id === editingComboId);
   const combo = normalizeCombo({
-    id: `combo-${Date.now()}`,
+    id: existingCombo?.id || `combo-${Date.now()}`,
     areaKey,
     cat,
     name,
     description,
     items: comboDraftItems,
   });
+  const previousArea = existingCombo?.areaKey;
   try {
     if (combosOnline) {
-      await createComboOnline(combo);
+      if (existingCombo) await updateComboOnline(combo);
+      else await createComboOnline(combo);
       await loadOnlineCombos();
     } else {
-      combos.push(combo);
+      if (existingCombo) combos = combos.map(row => row.id === existingCombo.id ? combo : row);
+      else combos.push(combo);
       saveCombos();
     }
   } catch (error) {
@@ -3940,10 +4051,11 @@ async function saveNewCombo() {
     showToast('No se pudo guardar el combo online.');
     return;
   }
-  comboDraftItems = [];
-  renderCombosAdminPanel();
+  resetComboForm();
+  renderCombosAdminPanel(false);
+  if (previousArea && previousArea !== areaKey) rebuildArea(previousArea);
   rebuildArea(areaKey);
-  showToast(`Combo "${name}" creado${combosOnline ? ' online' : ' en este navegador'}.`);
+  showToast(`Combo "${name}" ${existingCombo ? 'editado' : 'creado'}${combosOnline ? ' online' : ' en este navegador'}.`);
 }
 
 async function removeCombo(id) {
