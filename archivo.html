@@ -78,6 +78,8 @@
   .deposit-link { background: #1f7a43; }
   .deposit-link:hover { background: #155c31; }
   .file-actions { display: flex; align-items: center; gap: 7px; }
+  .edit-btn { min-height: auto; padding: 8px 10px; background: transparent; border-color: #555; color: #ddd; font-size: 10px; white-space: nowrap; }
+  .edit-btn:hover { background: #252525; border-color: var(--red); color: var(--white); }
   .delete-btn { min-height: auto; padding: 8px 10px; background: transparent; border-color: #653236; color: #ff858a; font-size: 10px; white-space: nowrap; }
   .delete-btn:hover { background: #6d1117; border-color: var(--red); color: var(--white); }
   .muted { color: var(--muted); }
@@ -88,6 +90,25 @@
   .delete-modal { width: min(480px, 100%); padding: 25px; background: #141414; border: 1px solid #444; border-top: 3px solid var(--red); box-shadow: 0 25px 80px rgba(0,0,0,.6); }
   .delete-modal h2 { margin: 0 0 8px; font: 800 25px var(--display); letter-spacing: 1px; }
   .delete-modal p { color: var(--muted); line-height: 1.5; }
+  .edit-modal { width: min(720px, 100%); max-height: min(92vh, 760px); overflow: auto; padding: 25px; background: #141414; border: 1px solid #444; border-top: 3px solid var(--red); box-shadow: 0 25px 80px rgba(0,0,0,.6); }
+  .edit-modal h2 { margin: 0 0 8px; font: 800 25px var(--display); letter-spacing: 1px; }
+  .edit-modal p { color: var(--muted); line-height: 1.5; }
+  .edit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+  .edit-field.full { grid-column: 1 / -1; }
+  .edit-field label { display: block; margin-bottom: 7px; color: var(--muted); font: 10px var(--mono); letter-spacing: 1px; text-transform: uppercase; }
+  .edit-field input { width: 100%; }
+  .edit-help { margin-top: 6px; color: var(--muted); font: 10px var(--mono); line-height: 1.45; }
+  .edit-error { display: none; margin-bottom: 12px; color: #ff7272; font: 10px var(--mono); letter-spacing: 1px; }
+  .edit-items-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0 8px; }
+  .edit-items-title { color: var(--red); font: 800 14px var(--display); letter-spacing: 1.2px; text-transform: uppercase; }
+  .open-planner-btn { min-height: auto; padding: 8px 10px; background: transparent; border-color: #555; color: #ddd; font-size: 10px; white-space: nowrap; }
+  .open-planner-btn:hover { border-color: var(--red); color: var(--white); background: #252525; }
+  .edit-items-list { display: grid; gap: 8px; max-height: 310px; overflow: auto; padding-right: 4px; }
+  .edit-item-row { display: grid; grid-template-columns: minmax(180px, 1fr) 74px minmax(160px, .8fr); gap: 8px; align-items: center; padding: 10px; background: #0f0f0f; border: 1px solid var(--line); }
+  .edit-item-name { color: var(--white); font: 700 12px var(--body); }
+  .edit-item-meta { margin-top: 3px; color: var(--muted); font: 9px var(--mono); letter-spacing: .7px; text-transform: uppercase; }
+  .edit-item-row input { min-height: 36px; }
+  .edit-item-empty { padding: 12px; border: 1px dashed var(--line); color: var(--muted); font: 11px var(--mono); line-height: 1.5; }
   .delete-target { margin: 18px 0; padding: 12px; background: #0d0d0d; border: 1px solid var(--line); color: var(--white); font: 11px var(--mono); overflow-wrap: anywhere; }
   .delete-password-label { display: block; margin-bottom: 7px; color: var(--muted); font: 10px var(--mono); letter-spacing: 1px; }
   .delete-password { width: 100%; margin-bottom: 7px; }
@@ -106,6 +127,8 @@
     main { padding: 30px 16px 50px; }
     .stats { grid-template-columns: 1fr; }
     .toolbar { grid-template-columns: 1fr; }
+    .edit-grid { grid-template-columns: 1fr; }
+    .edit-item-row { grid-template-columns: 1fr; }
     .area-group > summary { align-items: flex-start; padding: 14px; }
     .area-group-title { font-size: 19px; }
     .area-group-meta { font-size: 9px; }
@@ -163,6 +186,41 @@
     </div>
   </div>
 </div>
+<div class="modal-backdrop" id="edit-modal" role="dialog" aria-modal="true" aria-labelledby="edit-title">
+  <div class="edit-modal">
+    <h2 id="edit-title">EDITAR PLANILLA</h2>
+    <p>Modificá los datos visibles del archivo. Si adjuntás un PDF nuevo, reemplaza al PDF online actual de esta planilla.</p>
+    <div class="delete-target" id="edit-target"></div>
+    <div class="edit-error" id="edit-error" role="alert"></div>
+    <div class="edit-grid">
+      <div class="edit-field"><label for="edit-os">NUMERO DE ORDEN</label><input id="edit-os" type="text"></div>
+      <div class="edit-field"><label for="edit-area">AREA</label><input id="edit-area" type="text"></div>
+      <div class="edit-field"><label for="edit-lugar">LUGAR</label><input id="edit-lugar" type="text"></div>
+      <div class="edit-field"><label for="edit-sala">SALA</label><input id="edit-sala" type="text"></div>
+      <div class="edit-field"><label for="edit-armado">ARMADO</label><input id="edit-armado" type="text"></div>
+      <div class="edit-field"><label for="edit-desarme">DESARME</label><input id="edit-desarme" type="text"></div>
+      <div class="edit-field"><label for="edit-lider">RESPONSABLE</label><input id="edit-lider" type="text"></div>
+      <div class="edit-field"><label for="edit-total-units">UNIDADES</label><input id="edit-total-units" type="number" min="0" step="1"></div>
+      <div class="edit-field full">
+        <label for="edit-pdf-file">REEMPLAZAR PDF</label>
+        <input id="edit-pdf-file" type="file" accept="application/pdf,.pdf">
+        <div class="edit-help">Dejalo vacío para cambiar solo los datos. Si cargás un PDF, se sube sobre el archivo online existente.</div>
+      </div>
+      <div class="edit-field full">
+        <div class="edit-items-head">
+          <div class="edit-items-title">Items cargados</div>
+          <button class="open-planner-btn" id="edit-open-planner" type="button">CARGAR EN PLANILLERO</button>
+        </div>
+        <div class="edit-items-list" id="edit-items-list"></div>
+        <div class="edit-help">Los cambios de items actualizan la copia editable y las unidades. Para que se vean dentro del PDF, cargá la planilla en el planillero y generá/reemplazá el PDF.</div>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="cancel" id="edit-cancel" type="button">CANCELAR</button>
+      <button class="confirm" id="edit-save" type="button">GUARDAR CAMBIOS</button>
+    </div>
+  </div>
+</div>
 <script>
 const {
   SUPABASE_URL, SUPABASE_KEY, SUPABASE_BUCKET, SUPABASE_TABLE,
@@ -180,8 +238,16 @@ const deleteModalEl = document.getElementById('delete-modal');
 const deleteConfirmEl = document.getElementById('delete-confirm');
 const deletePasswordEl = document.getElementById('delete-password');
 const deleteErrorEl = document.getElementById('delete-error');
+const editModalEl = document.getElementById('edit-modal');
+const editSaveEl = document.getElementById('edit-save');
+const editErrorEl = document.getElementById('edit-error');
+const editFileEl = document.getElementById('edit-pdf-file');
+const editItemsListEl = document.getElementById('edit-items-list');
+const editOpenPlannerEl = document.getElementById('edit-open-planner');
 const DELETE_PASSWORD = 'cr2026';
 let pendingDelete = null;
+let pendingEdit = null;
+let pendingEditSnapshot = null;
 
 function setStatus(message, error = false) {
   statusEl.textContent = message;
@@ -239,10 +305,13 @@ function createDocumentRow(doc) {
     actions.appendChild(deposit);
   }
   link.textContent = 'VER PDF ↗';
+  const editButton = document.createElement('button');
+  editButton.className = 'edit-btn'; editButton.type = 'button'; editButton.textContent = 'EDITAR';
+  editButton.addEventListener('click', () => openEditModal(doc));
   const deleteButton = document.createElement('button');
   deleteButton.className = 'delete-btn'; deleteButton.type = 'button'; deleteButton.textContent = 'ELIMINAR';
   deleteButton.addEventListener('click', () => openDeleteModal(doc));
-  actions.append(link, deleteButton);
+  actions.append(link, editButton, deleteButton);
   action.appendChild(actions);
   return row;
 }
@@ -321,6 +390,301 @@ function render() {
   listEl.style.display = isEmpty ? 'none' : 'grid';
   const orderTotal = [...areas.values()].reduce((sum, group) => sum + group.orders.size, 0);
   setStatus(`${filtered.length} de ${documents.length} documentos · ${areas.size} área${areas.size === 1 ? '' : 's'} · ${orderTotal} ${orderTotal === 1 ? 'orden' : 'órdenes'}`);
+}
+
+function archiveHeaders(extra = {}) {
+  return {
+    'apikey': SUPABASE_KEY,
+    'Authorization': `Bearer ${SUPABASE_KEY}`,
+    ...extra,
+  };
+}
+
+function setEditError(message = '') {
+  editErrorEl.textContent = message;
+  editErrorEl.style.display = message ? 'block' : 'none';
+}
+
+function editInput(id) {
+  return document.getElementById(`edit-${id}`);
+}
+
+function normalizeEventSnapshot(value) {
+  if (!value) return null;
+  if (typeof value === 'object') return value;
+  try { return JSON.parse(value); } catch (error) { return null; }
+}
+
+function cloneSnapshot(snapshot) {
+  return snapshot ? JSON.parse(JSON.stringify(snapshot)) : null;
+}
+
+function snapshotSalaName(snapshot, salaId) {
+  const sala = Array.isArray(snapshot?.salas) ? snapshot.salas.find(item => item.id === salaId) : null;
+  return sala?.name || salaId || 'Sin sala';
+}
+
+function areaLabelFromKey(areaKey) {
+  return ({ cctv: 'CCTV', sonido: 'SONIDO', video: 'VIDEO', luces: 'LUCES' })[areaKey] || String(areaKey || '').toUpperCase();
+}
+
+function parseItemKey(key, snapshot) {
+  const parts = String(key || '').split('::');
+  const [salaId, areaKey, category, ...itemParts] = parts;
+  return {
+    key,
+    sala: snapshotSalaName(snapshot, salaId),
+    area: areaLabelFromKey(areaKey),
+    category: category || 'SIN CATEGORIA',
+    item: itemParts.join('::') || 'SIN ITEM',
+  };
+}
+
+function renderEditItems(snapshot) {
+  editItemsListEl.replaceChildren();
+  const quantities = snapshot?.quantities && typeof snapshot.quantities === 'object' ? snapshot.quantities : null;
+  if (!quantities || !Object.keys(quantities).length) {
+    const empty = document.createElement('div');
+    empty.className = 'edit-item-empty';
+    empty.textContent = 'Esta planilla no tiene items editables guardados. Puede ser un PDF viejo o generado antes de habilitar la copia completa.';
+    editItemsListEl.appendChild(empty);
+    editOpenPlannerEl.disabled = true;
+    return;
+  }
+
+  editOpenPlannerEl.disabled = false;
+  const rows = Object.entries(quantities)
+    .map(([key, qty]) => ({ ...parseItemKey(key, snapshot), qty: Number(qty) || 0, obs: snapshot.observations?.[key] || '' }))
+    .sort((a, b) => [a.sala, a.area, a.category, a.item].join('|').localeCompare([b.sala, b.area, b.category, b.item].join('|'), 'es-AR', { numeric: true }));
+
+  rows.forEach(rowData => {
+    const row = document.createElement('div');
+    row.className = 'edit-item-row';
+    row.dataset.key = rowData.key;
+
+    const info = document.createElement('div');
+    const name = document.createElement('div');
+    name.className = 'edit-item-name';
+    name.textContent = rowData.item;
+    const meta = document.createElement('div');
+    meta.className = 'edit-item-meta';
+    meta.textContent = `${rowData.sala} · ${rowData.area} · ${rowData.category}`;
+    info.append(name, meta);
+
+    const qty = document.createElement('input');
+    qty.className = 'edit-item-qty';
+    qty.type = 'number';
+    qty.min = '0';
+    qty.step = '1';
+    qty.value = rowData.qty;
+    qty.setAttribute('aria-label', `Cantidad ${rowData.item}`);
+
+    const obs = document.createElement('input');
+    obs.className = 'edit-item-obs';
+    obs.type = 'text';
+    obs.placeholder = 'Observacion';
+    obs.value = rowData.obs;
+    obs.setAttribute('aria-label', `Observacion ${rowData.item}`);
+
+    row.append(info, qty, obs);
+    editItemsListEl.appendChild(row);
+  });
+}
+
+function collectEditedSnapshot(payload) {
+  if (!pendingEditSnapshot) return null;
+  const snapshot = cloneSnapshot(pendingEditSnapshot);
+  snapshot.quantities = snapshot.quantities && typeof snapshot.quantities === 'object' ? { ...snapshot.quantities } : {};
+  snapshot.observations = snapshot.observations && typeof snapshot.observations === 'object' ? { ...snapshot.observations } : {};
+  let totalUnits = 0;
+
+  editItemsListEl.querySelectorAll('.edit-item-row').forEach(row => {
+    const key = row.dataset.key;
+    const qtyValue = Number.parseInt(row.querySelector('.edit-item-qty')?.value, 10);
+    const qty = Number.isFinite(qtyValue) && qtyValue > 0 ? qtyValue : 0;
+    const obs = row.querySelector('.edit-item-obs')?.value.trim() || '';
+    if (qty > 0) {
+      snapshot.quantities[key] = qty;
+      totalUnits += qty;
+    } else {
+      delete snapshot.quantities[key];
+    }
+    if (obs) snapshot.observations[key] = obs;
+    else delete snapshot.observations[key];
+  });
+
+  snapshot.ev = {
+    ...(snapshot.ev || {}),
+    os: payload.os,
+    lugar: payload.lugar,
+    armado: payload.armado,
+    desarme: payload.desarme,
+    lider: payload.lider,
+  };
+  snapshot.saved_at = new Date().toISOString();
+  return { snapshot, totalUnits };
+}
+
+function openEditModal(doc) {
+  pendingEdit = doc;
+  pendingEditSnapshot = normalizeEventSnapshot(doc.event_data);
+  document.getElementById('edit-target').textContent = `${doc.os || 'Sin OS'} · ${doc.lugar || 'Sin lugar'} · ${doc.filename}`;
+  editInput('os').value = doc.os || '';
+  editInput('area').value = doc.area || '';
+  editInput('lugar').value = doc.lugar || '';
+  editInput('sala').value = doc.sala || '';
+  editInput('armado').value = doc.armado || '';
+  editInput('desarme').value = doc.desarme || '';
+  editInput('lider').value = doc.lider || '';
+  editInput('total-units').value = Number(doc.total_units || 0);
+  editFileEl.value = '';
+  renderEditItems(pendingEditSnapshot);
+  setEditError('');
+  editSaveEl.disabled = false;
+  editSaveEl.textContent = 'GUARDAR CAMBIOS';
+  editModalEl.classList.add('open');
+  setTimeout(() => editInput('os').focus(), 0);
+}
+
+function closeEditModal() {
+  if (editSaveEl.disabled) return;
+  pendingEdit = null;
+  pendingEditSnapshot = null;
+  editModalEl.classList.remove('open');
+}
+
+function editedMetadataPayload() {
+  const totalUnits = Number.parseInt(editInput('total-units').value, 10);
+  return {
+    os: editInput('os').value.trim(),
+    lugar: editInput('lugar').value.trim(),
+    sala: editInput('sala').value.trim(),
+    area: editInput('area').value.trim(),
+    armado: editInput('armado').value.trim(),
+    desarme: editInput('desarme').value.trim(),
+    lider: editInput('lider').value.trim(),
+    total_units: Number.isFinite(totalUnits) && totalUnits >= 0 ? totalUnits : 0,
+  };
+}
+
+async function replacePdfObject(doc, file) {
+  if (!file) return {};
+  if (file.type && file.type !== 'application/pdf') throw new Error('El archivo debe ser PDF.');
+  if (!String(file.name || '').toLowerCase().endsWith('.pdf')) throw new Error('El archivo debe terminar en .pdf.');
+  if (!doc.storage_path) throw new Error('Esta planilla no tiene una ruta de Storage para reemplazar.');
+
+  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${doc.storage_path}`, {
+    method: 'POST',
+    headers: archiveHeaders({
+      'Content-Type': 'application/pdf',
+      'x-upsert': 'true',
+    }),
+    body: file,
+  });
+  if (!res.ok) throw new Error(`Storage: ${await res.text()}`);
+  return {
+    file_size: file.size,
+    public_url: publicUrl(doc.storage_path),
+  };
+}
+
+async function updateDepositChecklistMetadata(doc, payload) {
+  const checklist = checklistByPdf.get(doc.id);
+  if (!checklist || !DEPOSIT_CHECKLISTS_TABLE) return;
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${DEPOSIT_CHECKLISTS_TABLE}?id=eq.${encodeURIComponent(checklist.id)}`, {
+    method: 'PATCH',
+    headers: archiveHeaders({
+      'Content-Type': 'application/json',
+      'Prefer': 'return=minimal',
+    }),
+    body: JSON.stringify({
+      os: payload.os,
+      lugar: payload.lugar,
+      sala: payload.sala,
+      area: payload.area,
+      armado: payload.armado,
+      desarme: payload.desarme,
+      lider: payload.lider,
+    }),
+  });
+  if (!res.ok) console.warn('No se pudo actualizar deposito:', await res.text());
+}
+
+async function saveEditedDocument() {
+  const doc = pendingEdit;
+  if (!doc) return;
+  const payload = editedMetadataPayload();
+  const editedSnapshot = collectEditedSnapshot(payload);
+  if (editedSnapshot) {
+    payload.event_data = editedSnapshot.snapshot;
+    payload.total_units = editedSnapshot.totalUnits;
+  }
+  const file = editFileEl.files && editFileEl.files[0] ? editFileEl.files[0] : null;
+  setEditError('');
+  editSaveEl.disabled = true;
+  editSaveEl.textContent = file ? 'REEMPLAZANDO PDF...' : 'GUARDANDO...';
+  setStatus(`Actualizando ${doc.filename}...`);
+
+  try {
+    const filePayload = await replacePdfObject(doc, file);
+    const fullPayload = { ...payload, ...filePayload };
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?id=eq.${encodeURIComponent(doc.id)}`, {
+      method: 'PATCH',
+      headers: archiveHeaders({
+        'Content-Type': 'application/json',
+        'Prefer': 'return=representation',
+      }),
+      body: JSON.stringify(fullPayload),
+    });
+    if (!res.ok) throw new Error(await res.text());
+    const [updated] = await res.json();
+    await updateDepositChecklistMetadata(doc, payload);
+    documents = documents.map(item => item.id === doc.id ? { ...item, ...updated } : item);
+    pendingEdit = null;
+    pendingEditSnapshot = null;
+    editModalEl.classList.remove('open');
+    updateStats();
+    render();
+    setStatus(file ? `Planilla editada y PDF reemplazado: ${doc.filename}` : `Planilla editada: ${doc.filename}`);
+  } catch (error) {
+    console.error('No se pudo editar la planilla:', error);
+    const message = String(error.message || error);
+    const hint = message.includes('violates row-level security') || message.includes('permission denied')
+      ? 'No se pudo guardar. Ejecutá primero supabase-enable-pdf-edit.sql en Supabase.'
+      : `No se pudo guardar: ${message}`;
+    setEditError(hint);
+    setStatus('No se pudo editar la planilla.', true);
+    editSaveEl.disabled = false;
+    editSaveEl.textContent = 'REINTENTAR';
+  }
+}
+
+function openEditedSnapshotInPlanner() {
+  if (!pendingEdit || !pendingEditSnapshot) {
+    setEditError('Esta planilla no tiene items completos para cargar en el planillero.');
+    return;
+  }
+  const payload = editedMetadataPayload();
+  const editedSnapshot = collectEditedSnapshot(payload);
+  const snapshot = editedSnapshot?.snapshot || cloneSnapshot(pendingEditSnapshot);
+  const state = {
+    version: 2,
+    eventId: snapshot.event_id || `archivo-${pendingEdit.id}`,
+    ev: snapshot.ev || {},
+    salas: Array.isArray(snapshot.salas) ? snapshot.salas : [],
+    salaCounter: Number(snapshot.salaCounter) || (Array.isArray(snapshot.salas) ? snapshot.salas.length : 0),
+    currentSalaId: snapshot.currentSalaId || snapshot.salas?.[0]?.id || null,
+    currentArea: 'cctv',
+    quantities: snapshot.quantities || {},
+    observations: snapshot.observations || {},
+  };
+  try {
+    localStorage.setItem('cr_deposito', JSON.stringify(state));
+    window.location.href = 'index.html';
+  } catch (error) {
+    console.error('No se pudo cargar en el planillero:', error);
+    setEditError('No se pudo cargar la planilla en este navegador.');
+  }
 }
 
 function openDeleteModal(doc) {
@@ -404,10 +768,16 @@ async function loadDocuments() {
   setStatus('Actualizando archivo online…');
   document.getElementById('refresh').disabled = true;
   try {
-    const select = 'id,filename,storage_path,public_url,os,lugar,sala,area,armado,desarme,lider,total_units,file_size,created_at';
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?select=${select}&order=created_at.desc&limit=1000`, {
+    const select = 'id,filename,storage_path,public_url,os,lugar,sala,area,armado,desarme,lider,total_units,file_size,created_at,event_data';
+    let res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?select=${select}&order=created_at.desc&limit=1000`, {
       headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
     });
+    if (!res.ok) {
+      const fallbackSelect = 'id,filename,storage_path,public_url,os,lugar,sala,area,armado,desarme,lider,total_units,file_size,created_at';
+      res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?select=${fallbackSelect}&order=created_at.desc&limit=1000`, {
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+    }
     if (!res.ok) throw new Error(await res.text());
     documents = await res.json();
     await loadDepositChecklists();
@@ -453,6 +823,10 @@ deleteConfirmEl.addEventListener('click', deleteDocument);
 deletePasswordEl.addEventListener('input', () => { deleteErrorEl.style.display = 'none'; });
 deletePasswordEl.addEventListener('keydown', event => { if (event.key === 'Enter') deleteDocument(); });
 deleteModalEl.addEventListener('click', event => { if (event.target === deleteModalEl) closeDeleteModal(); });
+document.getElementById('edit-cancel').addEventListener('click', closeEditModal);
+editSaveEl.addEventListener('click', saveEditedDocument);
+editOpenPlannerEl.addEventListener('click', openEditedSnapshotInPlanner);
+editModalEl.addEventListener('click', event => { if (event.target === editModalEl) closeEditModal(); });
 loadDocuments();
 </script>
 </body>
