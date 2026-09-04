@@ -1735,6 +1735,10 @@
         <input type="text" id="ev-os" placeholder="Ej: 0156" oninput="saveState()">
       </div>
       <div class="field-group">
+        <label>Nombre de Evento</label>
+        <input type="text" id="ev-evento" placeholder="Ej: Congreso Médico 2026" oninput="saveState()">
+      </div>
+      <div class="field-group">
         <label>Lugar / Locación</label>
         <input type="text" id="ev-lugar" placeholder="Ej: CEC, La Rural, Sheraton" oninput="saveState()">
       </div>
@@ -2568,6 +2572,7 @@ function saveState() {
     eventId,
     ev: {
       os: document.getElementById('ev-os').value,
+      evento: document.getElementById('ev-evento').value,
       lugar: document.getElementById('ev-lugar').value,
       armado: document.getElementById('ev-armado').value,
       desarme: document.getElementById('ev-desarme').value,
@@ -2586,7 +2591,7 @@ function loadState() {
     const state = JSON.parse(raw);
     if (!state || !Array.isArray(state.salas)) return false;
     const ev = state.ev || {};
-    ['os','lugar','armado','desarme','lider','notas'].forEach(field => {
+    ['os','evento','lugar','armado','desarme','lider','notas'].forEach(field => {
       const input = document.getElementById(`ev-${field}`);
       if (input) input.value = ev[field] || '';
     });
@@ -2612,6 +2617,7 @@ function getEventSnapshot() {
     saved_at: new Date().toISOString(),
     ev: {
       os: document.getElementById('ev-os').value,
+      evento: document.getElementById('ev-evento').value,
       lugar: document.getElementById('ev-lugar').value,
       armado: document.getElementById('ev-armado').value,
       desarme: document.getElementById('ev-desarme').value,
@@ -2671,8 +2677,9 @@ function clearAll() {
 
 function updateHeaderInfo() {
   const os = document.getElementById('ev-os').value;
+  const evento = document.getElementById('ev-evento').value;
   const lugar = document.getElementById('ev-lugar').value;
-  const parts = [os, lugar].filter(Boolean);
+  const parts = [os, evento, lugar].filter(Boolean);
   document.getElementById('header-info').textContent = parts.length ? parts.join(' · ') : 'LISTADO OPERATIVO';
 }
 
@@ -2707,6 +2714,7 @@ function clearCurrentSalaArea() {
 function getEventData() {
   return {
     os: document.getElementById('ev-os').value || '—',
+    evento: document.getElementById('ev-evento').value || '—',
     lugar: document.getElementById('ev-lugar').value || '—',
     armado: formatDate(document.getElementById('ev-armado').value),
     desarme: formatDate(document.getElementById('ev-desarme').value),
@@ -2753,6 +2761,7 @@ function buildSummary() {
   hdr.className = 'summary-header';
   hdr.innerHTML = `<div class="summary-meta">
     <div class="meta-item"><label>OS</label><span>${ev.os}</span></div>
+    <div class="meta-item"><label>EVENTO</label><span>${ev.evento}</span></div>
     <div class="meta-item"><label>LUGAR</label><span>${ev.lugar}</span></div>
     <div class="meta-item"><label>SALAS</label><span>${salas.map(s=>s.name).join(', ')}</span></div>
     <div class="meta-item"><label>ARMADO</label><span>${ev.armado}</span></div>
@@ -2851,6 +2860,7 @@ function exportExcel() {
   const metaRows = [
     ['CAMPO', 'VALOR'],
     ['OS', ev.os],
+    ['EVENTO', ev.evento],
     ['LUGAR', ev.lugar],
     ['ARMADO', ev.armado],
     ['DESARME', ev.desarme],
@@ -2911,6 +2921,7 @@ function importExcel(input) {
         const meta = {};
         rows.slice(1).forEach(r => { if (r[0]) meta[r[0]] = r[1] || ''; });
         if (meta.OS)      { document.getElementById('ev-os').value      = meta.OS; }
+        if (meta.EVENTO)  { document.getElementById('ev-evento').value  = meta.EVENTO; }
         if (meta.LUGAR)   { document.getElementById('ev-lugar').value   = meta.LUGAR; }
         if (meta.ARMADO)  { document.getElementById('ev-armado').value  = meta.ARMADO; }
         if (meta.DESARME) { document.getElementById('ev-desarme').value = meta.DESARME; }
@@ -2918,8 +2929,9 @@ function importExcel(input) {
         if (meta.NOTAS)   { document.getElementById('ev-notas').value   = meta.NOTAS; }
         // Update header
         const os = document.getElementById('ev-os').value;
+        const evento = document.getElementById('ev-evento').value;
         const lugar = document.getElementById('ev-lugar').value;
-        const parts = [os, lugar].filter(Boolean);
+        const parts = [os, evento, lugar].filter(Boolean);
         document.getElementById('header-info').textContent = parts.length ? parts.join(' · ') : 'LISTADO OPERATIVO';
 
         // Restore salas from metadata
@@ -3003,7 +3015,7 @@ function printSalaArea(salaId, areaKey) {
   const filename = buildPdfFilename(ev, AREAS[areaKey].label, sala.name);
   const totalUnits = items.reduce((total, cat) => total + cat.items.reduce((sum, item) => sum + Number(item.qty || 0), 0), 0);
   showPrintAndRestore(pdfEl, filename, {
-    os: ev.os, lugar: ev.lugar, sala: sala.name, area: AREAS[areaKey].label,
+    os: ev.os, evento: ev.evento, lugar: ev.lugar, sala: sala.name, area: AREAS[areaKey].label,
     armado: ev.armado, desarme: ev.desarme, lider: ev.lider, total_units: totalUnits,
     event_data: getEventSnapshot(),
     __deposit_items: flattenDepositItems([{ sala, areaKey, items }])
@@ -3022,7 +3034,7 @@ function printAllSalasForArea(areaKey) {
   const filename = buildPdfFilename(ev, AREAS[areaKey].label, salaNames);
   const totalUnits = pages.reduce((total, page) => total + page.items.reduce((catTotal, cat) => catTotal + cat.items.reduce((sum, item) => sum + Number(item.qty || 0), 0), 0), 0);
   showPrintAndRestore(pdfEl, filename, {
-    os: ev.os, lugar: ev.lugar, sala: pages.map(p => p.sala.name).join(', '), area: AREAS[areaKey].label,
+    os: ev.os, evento: ev.evento, lugar: ev.lugar, sala: pages.map(p => p.sala.name).join(', '), area: AREAS[areaKey].label,
     armado: ev.armado, desarme: ev.desarme, lider: ev.lider, total_units: totalUnits,
     event_data: getEventSnapshot(),
     __deposit_items: flattenDepositItems(pages.map(page => ({ sala: page.sala, areaKey, items: page.items })))
@@ -3110,6 +3122,7 @@ async function savePdfMetadata(metadata) {
 
 function stripInternalMetadata(metadata) {
   const clean = { ...metadata };
+  delete clean.evento;
   delete clean.__deposit_items;
   return clean;
 }
@@ -3370,6 +3383,7 @@ function buildPdfPage(ev, area, areaItems, salaName) {
     </div>
     <div class="pdf-meta-grid">
       <div class="pdf-meta-item"><div class="pdf-meta-label">OS</div><div class="pdf-meta-value">${ev.os}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">EVENTO</div><div class="pdf-meta-value">${ev.evento}</div></div>
       <div class="pdf-meta-item"><div class="pdf-meta-label">LUGAR</div><div class="pdf-meta-value">${ev.lugar}</div></div>
       <div class="pdf-meta-item"><div class="pdf-meta-label">SALA</div><div class="pdf-meta-value">${salaName}</div></div>
       <div class="pdf-meta-item"><div class="pdf-meta-label">ARMADO</div><div class="pdf-meta-value">${ev.armado}</div></div>
@@ -3402,7 +3416,7 @@ function showToast(msg) {
 }
 
 // Update header info on input
-['ev-os','ev-lugar'].forEach(id => {
+['ev-os','ev-evento','ev-lugar'].forEach(id => {
   document.getElementById(id).addEventListener('input', updateHeaderInfo);
 });
 
@@ -4406,12 +4420,14 @@ function normalizeEventSnapshot(value) {
 }
 
 function buildDuplicateEventButton(record) {
+  const snapshot = normalizeEventSnapshot(record.event_data);
+  const eventName = snapshot?.ev?.evento || '';
   const button = document.createElement('button');
   button.type = 'button';
   button.className = 'duplicate-event';
   const title = document.createElement('span');
   title.className = 'duplicate-event-title';
-  title.textContent = `OS ${record.os || 'SIN NÚMERO'} · ${record.lugar || 'SIN LUGAR'}`;
+  title.textContent = [`OS ${record.os || 'SIN NÚMERO'}`, eventName, record.lugar || 'SIN LUGAR'].filter(Boolean).join(' · ');
   const meta = document.createElement('span');
   meta.className = 'duplicate-event-meta';
   const created = record.created_at ? new Intl.DateTimeFormat('es-AR', { dateStyle: 'short' }).format(new Date(record.created_at)) : 'sin fecha';
@@ -4427,10 +4443,10 @@ function buildDuplicateEventButton(record) {
 function duplicateStoredEvent(record) {
   const snapshot = normalizeEventSnapshot(record.event_data);
   const ev = snapshot?.ev || {
-    os: record.os || '', lugar: record.lugar || '', armado: rawStoredDate(record.armado),
+    os: record.os || '', evento: '', lugar: record.lugar || '', armado: rawStoredDate(record.armado),
     desarme: rawStoredDate(record.desarme), lider: record.lider || '', notas: ''
   };
-  ['os','lugar','armado','desarme','lider','notas'].forEach(field => {
+  ['os','evento','lugar','armado','desarme','lider','notas'].forEach(field => {
     document.getElementById(`ev-${field}`).value = ev[field] || '';
   });
 
