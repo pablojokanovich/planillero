@@ -905,6 +905,32 @@
       padding: 10px;
     }
 
+    .pdf-event-box {
+      border: 2px solid black;
+      padding: 8px 12px;
+      margin-bottom: 10px;
+      background: #f7f7f7 !important;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .pdf-event-label {
+      font-size: 8px;
+      letter-spacing: 1.4px;
+      text-transform: uppercase;
+      color: #555;
+      margin-bottom: 2px;
+    }
+
+    .pdf-event-value {
+      font-family: 'Rajdhani', Arial, sans-serif;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      line-height: 1.1;
+    }
+
     .pdf-meta-item { }
     .pdf-meta-label {
       font-size: 8px;
@@ -3234,6 +3260,9 @@ async function generateAndUploadPdf(pdfEl, filename, metadata) {
       .pdf-logo { font-size: 22px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; font-family: 'Rajdhani', sans-serif; }
       .pdf-area-badge { font-size: 26px; font-weight: 700; letter-spacing: 3px; border: 3px solid black; padding: 4px 16px; font-family: 'Rajdhani', sans-serif; }
       .pdf-meta-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 16px; border: 1px solid #ccc; padding: 10px; }
+      .pdf-event-box { border: 2px solid black; padding: 8px 12px; margin-bottom: 10px; background: #f7f7f7 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .pdf-event-label { font-size: 8px; letter-spacing: 1.4px; text-transform: uppercase; color: #555; margin-bottom: 2px; }
+      .pdf-event-value { font-family: 'Rajdhani', Arial, sans-serif; font-size: 20px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; line-height: 1.1; }
       .pdf-meta-label { font-size: 8px; letter-spacing: 1px; text-transform: uppercase; color: #666; margin-bottom: 2px; }
       .pdf-meta-value { font-size: 13px; font-weight: 600; }
       .pdf-table { width: 100%; border-collapse: collapse; font-size: 11px; }
@@ -3381,9 +3410,12 @@ function buildPdfPage(ev, area, areaItems, salaName) {
         <div style="font-size:11px;font-weight:700;letter-spacing:2px;margin-top:6px;border:2px solid black;padding:2px 10px;display:inline-block">${salaName}</div>
       </div>
     </div>
+    <div class="pdf-event-box">
+      <div class="pdf-event-label">NOMBRE DE EVENTO</div>
+      <div class="pdf-event-value">${ev.evento}</div>
+    </div>
     <div class="pdf-meta-grid">
       <div class="pdf-meta-item"><div class="pdf-meta-label">OS</div><div class="pdf-meta-value">${ev.os}</div></div>
-      <div class="pdf-meta-item"><div class="pdf-meta-label">EVENTO</div><div class="pdf-meta-value">${ev.evento}</div></div>
       <div class="pdf-meta-item"><div class="pdf-meta-label">LUGAR</div><div class="pdf-meta-value">${ev.lugar}</div></div>
       <div class="pdf-meta-item"><div class="pdf-meta-label">SALA</div><div class="pdf-meta-value">${salaName}</div></div>
       <div class="pdf-meta-item"><div class="pdf-meta-label">ARMADO</div><div class="pdf-meta-value">${ev.armado}</div></div>
