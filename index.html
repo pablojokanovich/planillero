@@ -2765,14 +2765,11 @@ function formatDateInput(input) {
 function getAreaItemsForSala(salaId, areaKey) {
   const result = [];
   for (const cat of AREAS[areaKey].data) {
-    const comboItems = getCombosForCategory(areaKey, cat.cat)
-      .filter(combo => quantities[comboKey(salaId, combo)])
-      .map(combo => ({ name: combo.name, qty: quantities[comboKey(salaId, combo)], obs: observations[comboKey(salaId, combo)] || '' }));
     const catItems = cat.items
       .filter(item => !isComboName(areaKey, cat.cat, item))
       .filter(item => quantities[`${salaId}::${areaKey}::${cat.cat}::${item}`])
       .map(item => ({ name: item, qty: quantities[`${salaId}::${areaKey}::${cat.cat}::${item}`], obs: observations[`${salaId}::${areaKey}::${cat.cat}::${item}`] || '' }));
-    const allItems = [...comboItems, ...catItems];
+    const allItems = catItems;
     if (allItems.length > 0) result.push({ cat: cat.cat, items: allItems });
   }
   return result;
@@ -3951,6 +3948,7 @@ function renderCombosAdminPanel(useCurrentForm = true) {
         </div>
         <div class="combo-admin-actions">
           <button class="combo-edit-btn" title="Editar combo" onclick="startComboEdit('${combo.id}')">EDITAR</button>
+          <button class="combo-edit-btn" title="Duplicar combo" onclick="duplicateCombo('${combo.id}')">DUPLICAR</button>
           <button class="btn-remove-item" title="Eliminar combo" onclick="removeCombo('${combo.id}')">&#215;</button>
         </div>
       `;
@@ -4087,6 +4085,35 @@ function startComboEdit(id) {
 function cancelComboEdit() {
   resetComboForm();
   renderCombosAdminPanel(false);
+}
+
+function buildDuplicateComboName(combo) {
+  const baseName = `${combo.name} COPIA`;
+  let name = baseName;
+  let copyNum = 2;
+  while (combos.some(row => row.areaKey === combo.areaKey && row.cat === combo.cat && row.name === name)) {
+    name = `${baseName} ${copyNum}`;
+    copyNum++;
+  }
+  return name;
+}
+
+function duplicateCombo(id) {
+  const combo = combos.find(row => row.id === id);
+  if (!combo) return;
+  editingComboId = null;
+  comboFormState = {
+    name: buildDuplicateComboName(combo),
+    areaKey: combo.areaKey,
+    cat: combo.cat,
+    description: combo.description || '',
+    itemArea: combo.areaKey,
+    itemCat: combo.items[0]?.cat || combo.cat,
+    itemQty: '1',
+  };
+  comboDraftItems = combo.items.map(item => ({ ...item }));
+  renderCombosAdminPanel(false);
+  showToast(`Combo "${combo.name}" duplicado. Revisá el nombre y guardalo.`);
 }
 
 async function saveCombo() {
