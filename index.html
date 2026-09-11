@@ -796,6 +796,286 @@
     color: var(--gray-600);
   }
 
+  /* ─── BULTOS & REMITO ─── */
+  .bultos-layout {
+    display: grid;
+    grid-template-columns: minmax(260px, 0.95fr) minmax(320px, 1.35fr);
+    gap: 20px;
+    align-items: start;
+  }
+
+  .bultos-panel {
+    border: 1px solid var(--gray-700);
+    background: rgba(24, 24, 27, 0.35);
+  }
+
+  .bultos-panel-header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--gray-700);
+    background: var(--gray-900);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .bultos-panel-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 2px;
+  }
+
+  .bultos-panel-sub {
+    margin-top: 3px;
+    color: var(--gray-500);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: 0.6px;
+  }
+
+  .bultos-list,
+  .bultos-pool {
+    display: grid;
+    gap: 10px;
+    padding: 14px;
+  }
+
+  .bulto-source-item {
+    padding: 10px 12px;
+    border: 1px solid var(--gray-700);
+    background: var(--black);
+    cursor: grab;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .bulto-source-item:active { cursor: grabbing; }
+  .bulto-source-item.dragging { opacity: 0.55; border-color: var(--red); }
+
+  .bulto-source-name,
+  .bulto-item-name {
+    color: var(--white);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .bulto-source-meta,
+  .bulto-item-meta {
+    margin-top: 3px;
+    color: var(--gray-500);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.6px;
+    text-transform: uppercase;
+  }
+
+  .bulto-qty-pill {
+    min-width: 34px;
+    padding: 4px 8px;
+    text-align: center;
+    color: var(--white);
+    background: var(--red);
+    font-family: var(--font-mono);
+    font-size: 12px;
+    font-weight: 700;
+  }
+
+  .bulto-card {
+    border: 1px solid var(--gray-700);
+    background: var(--gray-900);
+  }
+
+  .bulto-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--gray-800);
+  }
+
+  .bulto-name-input {
+    flex: 1;
+    min-width: 0;
+    background: var(--black);
+    border: 1px solid var(--gray-700);
+    color: var(--white);
+    font-family: var(--font-display);
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 8px 10px;
+    outline: none;
+    text-transform: uppercase;
+  }
+
+  .bulto-dropzone {
+    min-height: 82px;
+    padding: 10px;
+    display: grid;
+    gap: 8px;
+    align-content: start;
+    border: 1px dashed transparent;
+  }
+
+  .bulto-dropzone.drag-over {
+    border-color: var(--red);
+    background: rgba(232, 0, 10, 0.08);
+  }
+
+  .bulto-item {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 10px;
+    align-items: center;
+    padding: 9px 10px;
+    background: var(--black);
+    border: 1px solid var(--gray-800);
+  }
+
+  .bulto-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .bulto-mini-btn {
+    width: 26px;
+    height: 26px;
+    border: 1px solid var(--gray-700);
+    background: var(--gray-800);
+    color: var(--white);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-weight: 700;
+  }
+
+  .bulto-mini-btn:hover { border-color: var(--red); }
+  .bulto-auto-btn {
+    height: 28px;
+    padding: 0 10px;
+    border: 1px solid var(--gray-700);
+    background: var(--gray-800);
+    color: var(--white);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+  }
+  .bulto-auto-btn:hover { border-color: var(--red); background: var(--red-glow); }
+  .bultos-empty { padding: 18px; color: var(--gray-500); font-family: var(--font-mono); font-size: 12px; text-align: center; }
+
+  .remito-page {
+    width: 210mm;
+    height: 297mm;
+    padding: 12mm 13mm 10mm;
+    background: #ffffff;
+    color: #222;
+    font-family: Arial, sans-serif;
+    border: 2px solid #222;
+    margin: 0 auto;
+    overflow: hidden;
+  }
+
+  .remito-top {
+    display: grid;
+    grid-template-columns: 1.15fr 1fr;
+    gap: 34px;
+    align-items: start;
+    margin-bottom: 26px;
+  }
+
+  .remito-logo-row { display: flex; gap: 18px; align-items: flex-start; }
+  .remito-logo-mark { width: 118px; height: 118px; object-fit: contain; display: block; }
+  .remito-company { font-size: 12px; line-height: 1.25; }
+  .remito-kind { font-size: 10px; color: #8f3030; border-top: 1px solid #b34040; border-bottom: 1px solid #b34040; padding: 4px 0; font-weight: 700; }
+  .remito-date { margin-top: 18px; border-bottom: 1px solid #b34040; padding-bottom: 4px; font-size: 18px; font-weight: 700; }
+
+  .remito-data-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px 28px;
+    margin-bottom: 12px;
+  }
+
+  .remito-line {
+    border-bottom: 1px solid #b34040;
+    min-height: 24px;
+    font-size: 13px;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+  }
+
+  .remito-line.full { grid-column: 1 / -1; }
+  .remito-label { font-weight: 700; color: #333; white-space: nowrap; }
+  .remito-value { color: #174a8b; font-weight: 700; letter-spacing: 0.5px; }
+
+  .remito-detail-list {
+    margin-top: 12px;
+    border-top: 1px solid #b34040;
+  }
+
+  .remito-detail-head {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    background: #b53333;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  .remito-detail-head div {
+    padding: 5px 7px;
+  }
+
+  .remito-bulto-block {
+    padding: 8px 0 6px;
+    border-bottom: 1px solid #b34040;
+  }
+
+  .remito-bulto-title {
+    color: #111;
+    font-size: 13px;
+    font-weight: 800;
+    margin: 0 0 3px 0;
+  }
+
+  .remito-bulto-row {
+    display: grid;
+    grid-template-columns: 92px 1fr;
+    min-height: 20px;
+    align-items: end;
+    color: #174a8b;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .remito-bulto-qty {
+    text-align: center;
+    padding: 2px 7px;
+  }
+
+  .remito-bulto-detail {
+    padding: 2px 7px;
+    border-bottom: 1px solid rgba(179, 64, 64, 0.45);
+  }
+
+  .remito-bottom { margin-top: 16px; display: grid; gap: 9px; }
+  .remito-page.compact .remito-top { margin-bottom: 14px; }
+  .remito-page.compact .remito-logo-mark { width: 96px; height: 96px; }
+  .remito-page.compact .remito-line { min-height: 20px; }
+  .remito-page.compact .remito-bulto-block { padding: 5px 0 4px; }
+  .remito-page.compact .remito-bulto-row { min-height: 17px; font-size: 12px; }
+  .remito-page.compact .remito-bottom { margin-top: 10px; gap: 6px; }
+  .remito-bottom-grid { display: grid; grid-template-columns: 1.35fr 0.9fr 1fr; gap: 12px; }
+  .remito-footer { margin-top: 20px; display: grid; grid-template-columns: 1fr 1fr; gap: 28px; align-items: end; font-size: 10px; color: #333; }
+  .remito-barcode { height: 44px; background: repeating-linear-gradient(90deg, #111 0 2px, transparent 2px 4px, #111 4px 5px, transparent 5px 8px); border-bottom: 1px solid #777; }
+
   /* ─── TOAST ─── */
   .toast {
     position: fixed;
@@ -854,6 +1134,7 @@
 
   /* ─── PRINT / PDF STYLES ─── */
   @media print {
+    @page { size: A4 portrait; margin: 0; }
     body { background: white !important; color: black !important; }
     body::before { display: none; }
     .site-header, .steps, .no-print { display: none !important; }
@@ -869,6 +1150,24 @@
     }
 
     .pdf-page:last-child { page-break-after: avoid; }
+
+    .remito-page {
+      width: 210mm;
+      height: 297mm;
+      margin: 0;
+      page-break-after: avoid;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .remito-detail-head,
+    .remito-bulto-block,
+    .remito-bulto-row,
+    .remito-line,
+    .remito-bulto-detail {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
 
     .pdf-header {
       border-bottom: 3px solid black;
@@ -1337,6 +1636,9 @@
   @media (max-width: 620px) {
     .area-selector { gap: 6px; }
     .area-btn { flex: 1 1 calc(50% - 6px); padding: 10px 8px; font-size: 12px; }
+    .bultos-layout { grid-template-columns: 1fr; }
+    .bulto-item { grid-template-columns: 1fr; }
+    .bulto-item-actions { justify-content: flex-end; }
     .equipo-row,
     .equipo-row.kit-row {
       grid-template-columns: 1fr 96px;
@@ -1743,10 +2045,14 @@
       <div class="step-num">3</div>
       <div class="step-label">Resumen & PDF</div>
     </div>
+    <div class="step" id="step-tab-4" onclick="goToStep(4)">
+      <div class="step-num">4</div>
+      <div class="step-label">Bultos & Remito</div>
+    </div>
   </div>
 
   <div class="progress-bar-wrap">
-    <div class="progress-bar" id="progress-bar" style="width:33%"></div>
+    <div class="progress-bar" id="progress-bar" style="width:25%"></div>
   </div>
 
   <!-- ═══ STEP 1: DATOS DEL EVENTO ═══ -->
@@ -1832,7 +2138,46 @@
         <button class="btn btn-ghost" onclick="goToStep(2)">← VOLVER</button>
         <button class="btn btn-ghost" onclick="exportExcel()" title="Descargar Excel con todo lo cargado">⬇ EXPORTAR EXCEL</button>
       </div>
+      <button class="btn btn-secondary" onclick="goToStep(4)">ARMAR BULTOS / REMITO →</button>
       <!-- PDF buttons generated dynamically -->
+    </div>
+  </div>
+
+  <!-- ═══ STEP 4: BULTOS & REMITO ═══ -->
+  <div class="panel" id="panel-step4">
+    <div class="section-title">BULTOS & REMITO</div>
+    <div class="section-subtitle">// ARRASTRÁ EQUIPOS A CADA BULTO Y GENERÁ EL REMITO</div>
+    <span class="red-line"></span>
+
+    <div class="bultos-layout">
+      <div class="bultos-panel">
+        <div class="bultos-panel-header">
+          <div>
+            <div class="bultos-panel-title">EQUIPOS SIN BULTO</div>
+            <div class="bultos-panel-sub">Arrastrá cada item hacia un bulto</div>
+          </div>
+        </div>
+        <div class="bultos-pool" id="bultos-pool"></div>
+      </div>
+
+      <div class="bultos-panel">
+        <div class="bultos-panel-header">
+          <div>
+            <div class="bultos-panel-title">BULTOS</div>
+            <div class="bultos-panel-sub" id="bultos-count">0 bultos armados</div>
+          </div>
+          <button class="btn btn-ghost" type="button" onclick="addBulto()">+ BULTO</button>
+        </div>
+        <div class="bultos-list" id="bultos-list"></div>
+      </div>
+    </div>
+
+    <div class="action-bar no-print">
+      <div class="action-bar-left">
+        <button class="btn btn-ghost" onclick="goToStep(3)">← VOLVER</button>
+        <button class="btn btn-ghost" onclick="clearBultos()">↺ LIMPIAR BULTOS</button>
+      </div>
+      <button class="btn btn-primary" onclick="printRemito()">IMPRIMIR REMITO</button>
     </div>
   </div>
 
@@ -2013,6 +2358,8 @@ let currentArea = 'cctv';
 let salaCounter = 0;
 let quantities = {};
 let observations = {};
+let bultos = [];
+let bultoCounter = 0;
 let eventId = createEventId();
 
 const VMIX_CATEGORY = 'vMix';
@@ -2451,12 +2798,13 @@ function filterEquiposInSala(salaId) {
 
 function goToStep(n) {
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.step').forEach(s => { s.classList.remove('active'); s.classList.remove('done'); });
   document.getElementById('panel-step' + n).classList.add('active');
   document.getElementById('step-tab-' + n).classList.add('active');
   for (let i = 1; i < n; i++) document.getElementById('step-tab-' + i).classList.add('done');
-  document.getElementById('progress-bar').style.width = (n / 3 * 100) + '%';
+  document.getElementById('progress-bar').style.width = (n / 4 * 100) + '%';
   if (n === 3) buildSummary();
+  if (n === 4) renderBultos();
   const floatEl = document.getElementById('float-summary');
   if (floatEl) floatEl.style.display = (n === 2 && Object.keys(quantities).length > 0) ? 'flex' : 'none';
   window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -2605,7 +2953,7 @@ function saveState() {
       lider: document.getElementById('ev-lider').value,
       notas: document.getElementById('ev-notas').value,
     },
-    salas, salaCounter, currentSalaId, currentArea, quantities, observations
+    salas, salaCounter, currentSalaId, currentArea, quantities, observations, bultos, bultoCounter
   };
   try { localStorage.setItem('cr_deposito', JSON.stringify(state)); } catch(e) {}
 }
@@ -2625,6 +2973,8 @@ function loadState() {
     salaCounter = Number(state.salaCounter) || salas.length;
     quantities = state.quantities && typeof state.quantities === 'object' ? state.quantities : {};
     observations = state.observations && typeof state.observations === 'object' ? state.observations : {};
+    bultos = Array.isArray(state.bultos) ? state.bultos : [];
+    bultoCounter = Number(state.bultoCounter) || bultos.length;
     currentSalaId = salas.some(s => s.id === state.currentSalaId) ? state.currentSalaId : (salas[0]?.id || null);
     currentArea = AREAS[state.currentArea] ? state.currentArea : 'cctv';
     eventId = state.eventId || createEventId();
@@ -2654,6 +3004,8 @@ function getEventSnapshot() {
     salaCounter,
     quantities: { ...quantities },
     observations: { ...observations },
+    bultos: JSON.parse(JSON.stringify(bultos)),
+    bultoCounter,
   };
 }
 
@@ -2689,7 +3041,7 @@ function restoreQuantities() {
 
 function clearAll() {
   if (!confirm('¿Limpiar TODOS los datos del evento?')) return;
-  quantities = {}; observations = {}; salas = []; salaCounter = 0; currentSalaId = null; eventId = createEventId();
+  quantities = {}; observations = {}; bultos = []; bultoCounter = 0; salas = []; salaCounter = 0; currentSalaId = null; eventId = createEventId();
   try { localStorage.removeItem('cr_deposito'); } catch(e) {}
   document.querySelectorAll('input[type="text"], input[type="date"]').forEach(i => i.value = '');
   document.getElementById('header-info').textContent = 'LISTADO OPERATIVO';
@@ -2834,6 +3186,365 @@ function buildSummary() {
     container.appendChild(areaWrap);
   }
   buildPdfButtons();
+}
+
+function getAssignedEquipmentRows() {
+  const rows = [];
+  for (const sala of salas) {
+    for (const [areaKey, area] of Object.entries(AREAS)) {
+      const areaItems = getAreaItemsForSala(sala.id, areaKey);
+      for (const cat of areaItems) {
+        for (const item of cat.items) {
+          const sourceKey = buildItemKey(sala.id, areaKey, cat.cat, item.name);
+          rows.push({
+            sourceKey,
+            salaId: sala.id,
+            sala: sala.name,
+            areaKey,
+            area: area.label,
+            cat: cat.cat,
+            name: item.name,
+            qty: Number(item.qty || 0),
+            obs: item.obs || '',
+          });
+        }
+      }
+    }
+  }
+  return rows.filter(row => row.qty > 0);
+}
+
+function getBultoAssignedTotals() {
+  const totals = {};
+  bultos.forEach(bulto => {
+    (bulto.items || []).forEach(item => {
+      totals[item.sourceKey] = (totals[item.sourceKey] || 0) + Number(item.qty || 0);
+    });
+  });
+  return totals;
+}
+
+function normalizeBultos() {
+  const assignedRows = getAssignedEquipmentRows();
+  const maxByKey = Object.fromEntries(assignedRows.map(row => [row.sourceKey, row.qty]));
+  const used = {};
+  bultos = bultos
+    .filter(bulto => bulto && bulto.id)
+    .map((bulto, index) => {
+      const items = [];
+      (bulto.items || []).forEach(item => {
+        const max = maxByKey[item.sourceKey] || 0;
+        const available = Math.max(0, max - (used[item.sourceKey] || 0));
+        const qty = Math.min(Math.max(0, Number(item.qty || 0)), available);
+        if (qty > 0) {
+          used[item.sourceKey] = (used[item.sourceKey] || 0) + qty;
+          items.push({ sourceKey: item.sourceKey, qty });
+        }
+      });
+      return { id: bulto.id, name: bulto.name || `BULTO ${index + 1}`, items };
+    });
+}
+
+function addBulto() {
+  bultoCounter++;
+  bultos.push({ id: `bulto-${Date.now()}-${bultoCounter}`, name: `BULTO ${bultos.length + 1}`, items: [] });
+  renderBultos();
+  saveState();
+}
+
+function clearBultos() {
+  if (!bultos.length) return;
+  if (!confirm('¿Limpiar todos los bultos armados?')) return;
+  bultos = [];
+  bultoCounter = 0;
+  renderBultos();
+  saveState();
+}
+
+function removeBulto(id) {
+  bultos = bultos.filter(bulto => bulto.id !== id);
+  renderBultos();
+  saveState();
+}
+
+function renameBulto(id, value) {
+  const bulto = bultos.find(row => row.id === id);
+  if (!bulto) return;
+  bulto.name = value.trim().toUpperCase() || bulto.name;
+  saveState();
+}
+
+function assignItemToBulto(sourceKey, bultoId) {
+  const rows = getAssignedEquipmentRows();
+  const source = rows.find(row => row.sourceKey === sourceKey);
+  const bulto = bultos.find(row => row.id === bultoId);
+  if (!source || !bulto) return;
+
+  const assigned = getBultoAssignedTotals();
+  const remaining = Math.max(0, source.qty - (assigned[sourceKey] || 0));
+  if (!remaining) {
+    showToast('Ese equipo ya está asignado completo.');
+    return;
+  }
+
+  let qty = remaining;
+  if (remaining > 1) {
+    const typed = prompt(`Cantidad para ${source.name}:`, String(remaining));
+    if (typed === null) return;
+    qty = Math.max(0, Math.min(remaining, Math.floor(Number(typed) || 0)));
+    if (!qty) return;
+  }
+
+  const existing = (bulto.items || []).find(item => item.sourceKey === sourceKey);
+  if (existing) existing.qty += qty;
+  else {
+    if (!Array.isArray(bulto.items)) bulto.items = [];
+    bulto.items.push({ sourceKey, qty });
+  }
+  renderBultos();
+  saveState();
+}
+
+function autoAssignItemToOwnBulto(sourceKey) {
+  const rows = getAssignedEquipmentRows();
+  const source = rows.find(row => row.sourceKey === sourceKey);
+  if (!source) return;
+  const assigned = getBultoAssignedTotals();
+  const remaining = Math.max(0, source.qty - (assigned[sourceKey] || 0));
+  if (!remaining) {
+    showToast('Ese equipo ya está asignado completo.');
+    return;
+  }
+  let targetBulto = bultos.find(bulto => !bulto.items?.length);
+  if (!targetBulto) {
+    bultoCounter++;
+    targetBulto = { id: `bulto-${Date.now()}-${bultoCounter}`, name: `BULTO ${bultos.length + 1}`, items: [] };
+    bultos.push(targetBulto);
+  }
+  targetBulto.items = [{ sourceKey, qty: remaining }];
+  renderBultos();
+  saveState();
+  showToast(`${source.name} asignado a ${targetBulto.name}.`);
+}
+
+function changeBultoItemQty(bultoId, sourceKey, delta) {
+  const bulto = bultos.find(row => row.id === bultoId);
+  if (!bulto) return;
+  const item = (bulto.items || []).find(row => row.sourceKey === sourceKey);
+  if (!item) return;
+  const rows = getAssignedEquipmentRows();
+  const source = rows.find(row => row.sourceKey === sourceKey);
+  const assigned = getBultoAssignedTotals();
+  const usedOutsideThis = (assigned[sourceKey] || 0) - Number(item.qty || 0);
+  const maxForThis = Math.max(0, (source?.qty || 0) - usedOutsideThis);
+  item.qty = Math.max(0, Math.min(maxForThis, Number(item.qty || 0) + delta));
+  if (!item.qty) bulto.items = bulto.items.filter(row => row !== item);
+  renderBultos();
+  saveState();
+}
+
+function removeBultoItem(bultoId, sourceKey) {
+  const bulto = bultos.find(row => row.id === bultoId);
+  if (!bulto) return;
+  bulto.items = (bulto.items || []).filter(item => item.sourceKey !== sourceKey);
+  renderBultos();
+  saveState();
+}
+
+function renderBultos() {
+  const pool = document.getElementById('bultos-pool');
+  const list = document.getElementById('bultos-list');
+  const count = document.getElementById('bultos-count');
+  if (!pool || !list) return;
+  normalizeBultos();
+  const rows = getAssignedEquipmentRows();
+  const rowByKey = Object.fromEntries(rows.map(row => [row.sourceKey, row]));
+  const assigned = getBultoAssignedTotals();
+  const remainingRows = rows.map(row => ({ ...row, remaining: row.qty - (assigned[row.sourceKey] || 0) })).filter(row => row.remaining > 0);
+
+  pool.innerHTML = remainingRows.length ? '' : '<div class="bultos-empty">No quedan equipos sin asignar.</div>';
+  remainingRows.forEach(row => {
+    const item = document.createElement('div');
+    item.className = 'bulto-source-item';
+    item.draggable = true;
+    item.dataset.sourceKey = row.sourceKey;
+    item.innerHTML = `
+      <div>
+        <div class="bulto-source-name">${htmlEscape(row.name)}</div>
+        <div class="bulto-source-meta">${htmlEscape(row.sala)} / ${htmlEscape(row.area)} / ${htmlEscape(row.cat)}</div>
+      </div>
+      <div class="bulto-qty-pill">${row.remaining}</div>
+      <button class="bulto-auto-btn" type="button">BULTO PROPIO</button>
+    `;
+    item.querySelector('.bulto-auto-btn').addEventListener('click', event => {
+      event.stopPropagation();
+      autoAssignItemToOwnBulto(row.sourceKey);
+    });
+    item.addEventListener('dragstart', event => {
+      item.classList.add('dragging');
+      event.dataTransfer.setData('text/plain', row.sourceKey);
+    });
+    item.addEventListener('dragend', () => item.classList.remove('dragging'));
+    pool.appendChild(item);
+  });
+
+  if (!bultos.length) {
+    bultoCounter++;
+    bultos.push({ id: `bulto-${Date.now()}-${bultoCounter}`, name: 'BULTO 1', items: [] });
+  }
+  count.textContent = `${bultos.length} bulto${bultos.length === 1 ? '' : 's'} armado${bultos.length === 1 ? '' : 's'}`;
+
+  list.innerHTML = '';
+  bultos.forEach(bulto => {
+    const card = document.createElement('div');
+    card.className = 'bulto-card';
+    card.innerHTML = `
+      <div class="bulto-card-header">
+        <input class="bulto-name-input" value="${htmlEscape(bulto.name)}" onblur="renameBulto('${bulto.id}', this.value)">
+        <button class="bulto-mini-btn" type="button" title="Eliminar bulto" onclick="removeBulto('${bulto.id}')">×</button>
+      </div>
+      <div class="bulto-dropzone" data-bulto-id="${bulto.id}"></div>
+    `;
+    const dropzone = card.querySelector('.bulto-dropzone');
+    dropzone.addEventListener('dragover', event => { event.preventDefault(); dropzone.classList.add('drag-over'); });
+    dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+    dropzone.addEventListener('drop', event => {
+      event.preventDefault();
+      dropzone.classList.remove('drag-over');
+      assignItemToBulto(event.dataTransfer.getData('text/plain'), bulto.id);
+    });
+
+    if (!bulto.items?.length) {
+      dropzone.innerHTML = '<div class="bultos-empty">Soltá equipos acá.</div>';
+    } else {
+      bulto.items.forEach(item => {
+        const source = rowByKey[item.sourceKey];
+        if (!source) return;
+        const rowEl = document.createElement('div');
+        rowEl.className = 'bulto-item';
+        rowEl.innerHTML = `
+          <div>
+            <div class="bulto-item-name">${htmlEscape(source.name)}</div>
+            <div class="bulto-item-meta">${htmlEscape(source.sala)} / ${htmlEscape(source.area)} / ${htmlEscape(source.cat)}</div>
+          </div>
+          <div class="bulto-item-actions">
+            <button class="bulto-mini-btn bulto-dec" type="button">−</button>
+            <div class="bulto-qty-pill">${item.qty}</div>
+            <button class="bulto-mini-btn bulto-inc" type="button">+</button>
+            <button class="bulto-mini-btn bulto-remove" type="button" title="Quitar">×</button>
+          </div>
+        `;
+        rowEl.querySelector('.bulto-dec').addEventListener('click', () => changeBultoItemQty(bulto.id, item.sourceKey, -1));
+        rowEl.querySelector('.bulto-inc').addEventListener('click', () => changeBultoItemQty(bulto.id, item.sourceKey, 1));
+        rowEl.querySelector('.bulto-remove').addEventListener('click', () => removeBultoItem(bulto.id, item.sourceKey));
+        dropzone.appendChild(rowEl);
+      });
+    }
+    list.appendChild(card);
+  });
+}
+
+function buildRemitoPage() {
+  normalizeBultos();
+  const ev = getEventData();
+  const now = new Date();
+  const dateStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getFullYear()).slice(-2)}`;
+  const rowsByKey = Object.fromEntries(getAssignedEquipmentRows().map(row => [row.sourceKey, row]));
+  const remitoItemCount = bultos.reduce((total, bulto) => total + (bulto.items || []).length, 0);
+  const remitoHasManyRows = remitoItemCount + bultos.length > 22;
+  const bultoBlocks = bultos.map((bulto, index) => {
+    const bultoName = bulto.name || `BULTO ${index + 1}`;
+    const itemRows = (bulto.items || [])
+      .map(item => {
+        const source = rowsByKey[item.sourceKey];
+        if (!source) return '';
+        return `<div class="remito-bulto-row">
+          <div class="remito-bulto-qty">${htmlEscape(item.qty)}</div>
+          <div class="remito-bulto-detail">${htmlEscape(source.name)}</div>
+        </div>`;
+      })
+      .filter(Boolean)
+      .join('');
+    if (!itemRows) return '';
+    return `<div class="remito-bulto-block">
+      <div class="remito-bulto-title">${htmlEscape(bultoName)}:</div>
+      ${itemRows}
+    </div>`;
+  }).filter(Boolean).join('');
+  const logoSrc = document.querySelector('.logo img')?.src || '';
+  return `<div class="remito-page${remitoHasManyRows ? ' compact' : ''}">
+    <div class="remito-top">
+      <div class="remito-logo-row">
+        ${logoSrc ? `<img class="remito-logo-mark" src="${logoSrc}" alt="Congress Rental">` : '<div class="pdf-logo">Congress Rental</div>'}
+        <div class="remito-company"><b>Congress Rental</b><br>Antonio Beruti 1638<br>B1604 Florida Oeste</div>
+      </div>
+      <div>
+        <div class="remito-kind">REMITO DOCUMENTO NO VALIDO COMO FACTURA</div>
+        <div class="remito-date"><b>FECHA</b> <span class="remito-value">${dateStr}</span></div>
+      </div>
+    </div>
+    <div class="remito-data-grid">
+      <div class="remito-line full"><span class="remito-label">Cliente:</span><span class="remito-value">${htmlEscape(ev.evento)}</span></div>
+      <div class="remito-line"><span class="remito-label">Domicilio:</span></div>
+      <div class="remito-line"><span class="remito-label">Localidad:</span></div>
+      <div class="remito-line"><span class="remito-label">I.V.A.:</span></div>
+      <div class="remito-line"><span class="remito-label">C.U.I.T.:</span></div>
+    </div>
+    <div class="remito-detail-list">
+      <div class="remito-detail-head"><div>CANTIDAD</div><div>DETALLE</div></div>
+      ${bultoBlocks}
+    </div>
+    <div class="remito-bottom">
+      <div class="remito-data-grid">
+        <div class="remito-line"><span class="remito-label">Evento:</span><span class="remito-value">${htmlEscape(ev.evento)}</span></div>
+        <div class="remito-line"><span class="remito-label">Tel.:</span></div>
+      </div>
+      <div class="remito-bottom-grid">
+        <div class="remito-line"><span class="remito-label">Despacho:</span></div>
+        <div class="remito-line"><span class="remito-label">Fecha:</span></div>
+        <div class="remito-line"><span class="remito-label">Hora:</span></div>
+      </div>
+      <div class="remito-bottom-grid">
+        <div class="remito-line"><span class="remito-label">Vehículo:</span></div>
+        <div class="remito-line"><span class="remito-label">Chofer:</span></div>
+        <div class="remito-line"></div>
+      </div>
+      <div class="remito-bottom-grid">
+        <div class="remito-line"><span class="remito-label">Recibió:</span></div>
+        <div class="remito-line"><span class="remito-label">Fecha:</span></div>
+        <div class="remito-line"><span class="remito-label">Hora:</span></div>
+      </div>
+      <div class="remito-line"><span class="remito-label">Observaciones:</span></div>
+      <div class="remito-line"><span class="remito-label">Firma:</span></div>
+      <div class="remito-line"><span class="remito-label">Aclaración:</span></div>
+      <div class="remito-line"><span class="remito-label">D.N.I.:</span></div>
+    </div>
+  </div>`;
+}
+
+function printRemito() {
+  normalizeBultos();
+  if (!bultos.some(bulto => bulto.items?.length)) {
+    showToast('Armá al menos un bulto antes de imprimir el remito.');
+    return;
+  }
+  const pdfEl = document.getElementById('pdf-pages');
+  const ev = getEventData();
+  pdfEl.innerHTML = buildRemitoPage();
+  printElementAndRestore(pdfEl, `Remito_${(ev.os || 'SinOS').replace(/\W+/g, '-')}`);
+}
+
+function printElementAndRestore(printEl, title) {
+  const prevTitle = document.title;
+  if (title) document.title = title;
+  printEl.style.display = 'block';
+  document.querySelector('.site-header').style.display = 'none';
+  document.querySelector('.main-wrapper').style.display = 'none';
+  window.print();
+  document.querySelector('.site-header').style.display = '';
+  document.querySelector('.main-wrapper').style.display = '';
+  printEl.style.display = 'none';
+  document.title = prevTitle;
 }
 
 function buildPdfButtons() {
@@ -4514,12 +5225,16 @@ function duplicateStoredEvent(record) {
     salaCounter = Number(snapshot.salaCounter) || salas.length;
     quantities = snapshot.quantities && typeof snapshot.quantities === 'object' ? { ...snapshot.quantities } : {};
     observations = snapshot.observations && typeof snapshot.observations === 'object' ? { ...snapshot.observations } : {};
+    bultos = Array.isArray(snapshot.bultos) ? JSON.parse(JSON.stringify(snapshot.bultos)) : [];
+    bultoCounter = Number(snapshot.bultoCounter) || bultos.length;
   } else {
     const names = String(record.sala || 'SALA A').split(',').map(name => name.trim()).filter(Boolean);
     salas = (names.length ? names : ['SALA A']).map((name, index) => ({ id: `sala-${index + 1}`, name }));
     salaCounter = salas.length;
     quantities = {};
     observations = {};
+    bultos = [];
+    bultoCounter = 0;
   }
 
   eventId = createEventId();
