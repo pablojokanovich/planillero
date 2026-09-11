@@ -971,14 +971,14 @@
 
   .remito-page {
     width: 210mm;
-    height: 297mm;
+    min-height: 297mm;
     padding: 12mm 13mm 10mm;
     background: #ffffff;
     color: #222;
     font-family: Arial, sans-serif;
     border: 2px solid #222;
     margin: 0 auto;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .remito-top {
@@ -1036,6 +1036,8 @@
   .remito-bulto-block {
     padding: 8px 0 6px;
     border-bottom: 1px solid #b34040;
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 
   .remito-bulto-title {
@@ -1153,7 +1155,7 @@
 
     .remito-page {
       width: 210mm;
-      height: 297mm;
+      min-height: 297mm;
       margin: 0;
       page-break-after: avoid;
       -webkit-print-color-adjust: exact;
