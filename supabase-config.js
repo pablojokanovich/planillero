@@ -10,4 +10,8 @@ window.PDF_ARCHIVE_CONFIG = Object.freeze({
   FREELANCERS_TABLE: 'freelancers',
   DEPOSIT_CHECKLISTS_TABLE: 'deposit_checklists',
   DEPOSIT_CHECKLIST_ITEMS_TABLE: 'deposit_checklist_items',
+  AI_ORDERS_BUCKET: 'service-orders',
+  AI_JOBS_TABLE: 'ai_plan_jobs',
+  AI_AUDIT_TABLE: 'ai_plan_audit',
+  AI_RULES_TABLE: 'ai_plan_rules',
 });

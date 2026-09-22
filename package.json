@@ -1,0 +1,13 @@
+{
+  "name": "planillero-congress-rental",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Planillero operativo con asistente IA para CCTV",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "node --test tests/*.test.js",
+    "check": "node --check ai-planner.js && node --check api/ai-plan.js && node --check api/_cctv-rules.js"
+  }
+}

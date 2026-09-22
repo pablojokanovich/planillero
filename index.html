@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="supabase-config.js"></script>
+<link rel="stylesheet" href="ai-planner.css">
 <style>
   :root {
     --red: #E8000A;
@@ -2097,6 +2098,7 @@
     <div class="action-bar">
       <div class="action-bar-left">
         <button class="btn btn-ghost" onclick="clearAll()">↺ LIMPIAR TODO</button>
+        <button class="btn btn-ai" type="button" onclick="openAiPlanner()">✦ GENERAR PLANILLA CON IA</button>
         <label class="btn btn-ghost" style="cursor:pointer" title="Cargar Excel para restaurar datos">
           ⬆ IMPORTAR EXCEL
           <input type="file" accept=".xlsx" style="display:none" onchange="importExcel(this)">
@@ -2958,6 +2960,7 @@ function saveState() {
     salas, salaCounter, currentSalaId, currentArea, quantities, observations, bultos, bultoCounter
   };
   try { localStorage.setItem('cr_deposito', JSON.stringify(state)); } catch(e) {}
+  window.aiPlannerOnStateChange?.();
 }
 
 function loadState() {
@@ -5269,5 +5272,6 @@ document.querySelectorAll('.modal-overlay').forEach(overlay => {
   });
 });
 </script>
+<script src="ai-planner.js"></script>
 </body>
 </html>

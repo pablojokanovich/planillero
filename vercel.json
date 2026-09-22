@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/ai-plan.js": {
+      "maxDuration": 60
+    }
+  }
+}
