@@ -807,9 +807,14 @@
   .bultos-panel {
     border: 1px solid var(--gray-700);
     background: rgba(24, 24, 27, 0.35);
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    height: clamp(300px, 62vh, 720px);
   }
 
   .bultos-panel-header {
+    flex-shrink: 0;
     padding: 14px 16px;
     border-bottom: 1px solid var(--gray-700);
     background: var(--gray-900);
@@ -839,6 +844,12 @@
     display: grid;
     gap: 10px;
     padding: 14px;
+    align-content: start;
+    min-height: 0;
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-gutter: stable;
   }
 
   .bulto-source-item {
@@ -1639,6 +1650,7 @@
     .area-selector { gap: 6px; }
     .area-btn { flex: 1 1 calc(50% - 6px); padding: 10px 8px; font-size: 12px; }
     .bultos-layout { grid-template-columns: 1fr; }
+    .bultos-panel { height: clamp(220px, 40vh, 380px); }
     .bulto-item { grid-template-columns: 1fr; }
     .bulto-item-actions { justify-content: flex-end; }
     .equipo-row,
@@ -3353,11 +3365,61 @@ function removeBultoItem(bultoId, sourceKey) {
   saveState();
 }
 
+let bultoDragScrollFrame = null;
+let bultoDragScrollTarget = null;
+let bultoDragPointerY = 0;
+
+function stopBultoDragScroll() {
+  if (bultoDragScrollFrame !== null) cancelAnimationFrame(bultoDragScrollFrame);
+  bultoDragScrollFrame = null;
+  bultoDragScrollTarget = null;
+}
+
+function scrollBultosWhileDragging() {
+  const target = bultoDragScrollTarget;
+  if (!target) return;
+  const bounds = target.getBoundingClientRect();
+  const edge = Math.min(70, bounds.height / 3);
+  let speed = 0;
+  if (bultoDragPointerY < bounds.top + edge) {
+    speed = -14 * Math.min(1, (bounds.top + edge - bultoDragPointerY) / edge);
+  } else if (bultoDragPointerY > bounds.bottom - edge) {
+    speed = 14 * Math.min(1, (bultoDragPointerY - bounds.bottom + edge) / edge);
+  }
+  target.scrollTop += speed;
+  bultoDragScrollFrame = requestAnimationFrame(scrollBultosWhileDragging);
+}
+
+function setupBultoDragScroll(container) {
+  if (container.dataset.dragScrollReady) return;
+  container.dataset.dragScrollReady = 'true';
+  container.addEventListener('dragover', event => {
+    if (!document.querySelector('.bulto-source-item.dragging')) return;
+    event.preventDefault();
+    bultoDragScrollTarget = container;
+    bultoDragPointerY = event.clientY;
+    if (bultoDragScrollFrame === null) {
+      bultoDragScrollFrame = requestAnimationFrame(scrollBultosWhileDragging);
+    }
+  });
+  container.addEventListener('dragleave', event => {
+    if (!container.contains(event.relatedTarget) && bultoDragScrollTarget === container) {
+      stopBultoDragScroll();
+    }
+  });
+  container.addEventListener('drop', stopBultoDragScroll);
+}
+
 function renderBultos() {
   const pool = document.getElementById('bultos-pool');
   const list = document.getElementById('bultos-list');
   const count = document.getElementById('bultos-count');
   if (!pool || !list) return;
+  stopBultoDragScroll();
+  setupBultoDragScroll(pool);
+  setupBultoDragScroll(list);
+  const poolScrollTop = pool.scrollTop;
+  const listScrollTop = list.scrollTop;
   normalizeBultos();
   const rows = getAssignedEquipmentRows();
   const rowByKey = Object.fromEntries(rows.map(row => [row.sourceKey, row]));
@@ -3386,7 +3448,11 @@ function renderBultos() {
       item.classList.add('dragging');
       event.dataTransfer.setData('text/plain', row.sourceKey);
     });
-    item.addEventListener('dragend', () => item.classList.remove('dragging'));
+    item.addEventListener('dragend', () => {
+      item.classList.remove('dragging');
+      stopBultoDragScroll();
+      list.querySelectorAll('.drag-over').forEach(zone => zone.classList.remove('drag-over'));
+    });
     pool.appendChild(item);
   });
 
@@ -3444,6 +3510,8 @@ function renderBultos() {
     }
     list.appendChild(card);
   });
+  pool.scrollTop = poolScrollTop;
+  list.scrollTop = listScrollTop;
 }
 
 function buildRemitoPage() {
