@@ -979,6 +979,18 @@
   }
   .bulto-auto-btn:hover { border-color: var(--red); background: var(--red-glow); }
   .bultos-empty { padding: 18px; color: var(--gray-500); font-family: var(--font-mono); font-size: 12px; text-align: center; }
+  body.manual-remito-mode .main-wrapper > :not(#panel-remito-manual) { display: none !important; }
+  .manual-remito-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
+  .manual-remito-fields label { display: grid; gap: 8px; font-size: 12px; }
+  .manual-remito-fields input,
+  .manual-remito-row input { min-width: 0; width: 100%; padding: 10px; background: var(--black); border: 1px solid var(--gray-700); color: var(--white); font: inherit; }
+  .manual-remito-list { display: grid; gap: 16px; }
+  .manual-remito-row { display: grid; grid-template-columns: 84px minmax(0, 1fr) 32px; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .manual-remito-items { padding: 14px; }
+  @media (max-width: 620px) {
+    .manual-remito-fields { grid-template-columns: 1fr; }
+    .manual-remito-row { grid-template-columns: 64px minmax(0, 1fr) 32px; gap: 6px; }
+  }
 
   .remito-page {
     width: 210mm;
@@ -987,7 +999,7 @@
     background: #ffffff;
     color: #222;
     font-family: Arial, sans-serif;
-    border: 2px solid #222;
+    border: none;
     margin: 0 auto;
     overflow: visible;
   }
@@ -2027,6 +2039,7 @@
       <a class="active" href="index.html">Inicio</a>
       <a href="archivo.html">Planillas Hechas</a>
       <a href="citaciones.html">Citaciones</a>
+      <a href="#remito-manual" onclick="openManualRemito(); return false;">Remitos desde cero</a>
     </nav>
     <button class="btn-admin-trigger" onclick="openAdminLogin()" title="Panel de administración">&#9881;</button>
   </div>
@@ -2195,6 +2208,27 @@
     </div>
   </div>
 
+  <div class="panel" id="panel-remito-manual">
+    <div class="section-title">REMITOS DESDE CERO</div>
+    <span class="red-line"></span>
+    <div class="manual-remito-fields">
+      <label>NOMBRE DE EVENTO<input id="manual-remito-evento" type="text" oninput="updateManualRemitoField('evento', this.value)"></label>
+      <label>LOCACIÓN<input id="manual-remito-locacion" type="text" oninput="updateManualRemitoField('locacion', this.value)"></label>
+      <label>FECHA<input id="manual-remito-fecha" type="date" oninput="updateManualRemitoField('fecha', this.value)"></label>
+    </div>
+    <div class="bultos-panel-header">
+      <div class="bultos-panel-title">BULTOS</div>
+      <button class="btn btn-ghost" type="button" onclick="addManualBulto()">+ BULTO</button>
+    </div>
+    <div class="manual-remito-list" id="manual-remito-list"></div>
+    <div class="action-bar no-print">
+      <div class="action-bar-left">
+        <button class="btn btn-ghost" type="button" onclick="closeManualRemito()">VOLVER A PLANILLAS</button>
+        <button class="btn btn-ghost" type="button" onclick="resetManualRemito()">NUEVO REMITO</button>
+      </div>
+      <button class="btn btn-primary" type="button" onclick="printManualRemito()">IMPRIMIR REMITO</button>
+    </div>
+  </div>
 </div><!-- end main-wrapper -->
 
 <footer class="app-credit no-print">APP web generada por Pablo Jokanovich</footer>
@@ -3057,7 +3091,9 @@ function clearAll() {
   if (!confirm('¿Limpiar TODOS los datos del evento?')) return;
   quantities = {}; observations = {}; bultos = []; bultoCounter = 0; salas = []; salaCounter = 0; currentSalaId = null; eventId = createEventId();
   try { localStorage.removeItem('cr_deposito'); } catch(e) {}
-  document.querySelectorAll('input[type="text"], input[type="date"]').forEach(i => i.value = '');
+  document.querySelectorAll('input[type="text"], input[type="date"]').forEach(i => {
+    if (!i.closest('#panel-remito-manual')) i.value = '';
+  });
   document.getElementById('header-info').textContent = 'LISTADO OPERATIVO';
   document.getElementById('sala-contents').innerHTML = '';
   addSala('SALA A', false);
@@ -3514,19 +3550,175 @@ function renderBultos() {
   list.scrollTop = listScrollTop;
 }
 
-function buildRemitoPage() {
-  normalizeBultos();
-  const ev = getEventData();
+let manualRemito = null;
+
+function createManualRemito() {
   const now = new Date();
-  const dateStr = `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getFullYear()).slice(-2)}`;
-  const rowsByKey = Object.fromEntries(getAssignedEquipmentRows().map(row => [row.sourceKey, row]));
-  const remitoItemCount = bultos.reduce((total, bulto) => total + (bulto.items || []).length, 0);
-  const remitoHasManyRows = remitoItemCount + bultos.length > 22;
-  const bultoBlocks = bultos.map((bulto, index) => {
+  return {
+    evento: '', locacion: '',
+    fecha: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
+    bultos: [{ name: 'BULTO 1', items: [{ name: '', qty: 1 }] }]
+  };
+}
+
+function saveManualRemito() {
+  try {
+    localStorage.setItem('cr_remito_manual', JSON.stringify(manualRemito));
+  } catch (error) {
+    showToast('No se pudo guardar el borrador del remito en este navegador.');
+  }
+}
+
+function openManualRemito() {
+  if (!manualRemito) {
+    try {
+      const saved = JSON.parse(localStorage.getItem('cr_remito_manual'));
+      if (saved && Array.isArray(saved.bultos)) {
+        manualRemito = {
+          evento: String(saved.evento || saved.cliente || ''), locacion: String(saved.locacion || ''),
+          fecha: String(saved.fecha || createManualRemito().fecha),
+          bultos: saved.bultos.filter(bulto => bulto && Array.isArray(bulto.items)).map((bulto, index) => ({
+            name: String(bulto.name || `BULTO ${index + 1}`),
+            items: bulto.items.filter(item => item && typeof item === 'object').map(item => ({ name: String(item.name || ''), qty: item.qty ?? 1 }))
+          }))
+        };
+      }
+    } catch (error) {}
+    if (!manualRemito) manualRemito = createManualRemito();
+  }
+  document.body.classList.add('manual-remito-mode');
+  document.getElementById('panel-remito-manual').classList.add('active');
+  document.getElementById('float-summary').style.display = 'none';
+  ['evento', 'locacion', 'fecha'].forEach(field => {
+    document.getElementById(`manual-remito-${field}`).value = manualRemito[field];
+  });
+  renderManualBultos();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function closeManualRemito() {
+  document.body.classList.remove('manual-remito-mode');
+  document.getElementById('panel-remito-manual').classList.remove('active');
+  const activePanel = document.querySelector('.panel.active');
+  const step = Number(activePanel?.id.replace('panel-step', '')) || 1;
+  goToStep(step);
+}
+
+function updateManualRemitoField(field, value) {
+  manualRemito[field] = value;
+  saveManualRemito();
+}
+
+function addManualBulto() {
+  manualRemito.bultos.push({ name: `BULTO ${manualRemito.bultos.length + 1}`, items: [{ name: '', qty: 1 }] });
+  saveManualRemito();
+  renderManualBultos();
+  document.querySelector('#manual-remito-list .bulto-card:last-child input[data-field="name"]').focus();
+}
+
+function renderManualBultos() {
+  const list = document.getElementById('manual-remito-list');
+  list.innerHTML = '';
+  manualRemito.bultos.forEach((bulto, index) => {
+    const card = document.createElement('div');
+    card.className = 'bulto-card';
+    card.innerHTML = `<div class="bulto-card-header">
+      <input class="bulto-name-input" aria-label="Nombre del bulto" value="${htmlEscape(bulto.name)}">
+      <button class="bulto-mini-btn" type="button" title="Eliminar bulto" aria-label="Eliminar bulto">&times;</button>
+    </div><div class="manual-remito-items"></div>`;
+    card.querySelector('.bulto-name-input').addEventListener('input', event => {
+      bulto.name = event.target.value;
+      saveManualRemito();
+    });
+    card.querySelector('.bulto-mini-btn').addEventListener('click', () => {
+      if (bulto.items.some(item => item.name.trim()) && !confirm('¿Eliminar este bulto y sus equipos?')) return;
+      manualRemito.bultos.splice(index, 1);
+      saveManualRemito();
+      renderManualBultos();
+    });
+    const items = card.querySelector('.manual-remito-items');
+    bulto.items.forEach((item, itemIndex) => {
+      const row = document.createElement('div');
+      row.className = 'manual-remito-row';
+      row.innerHTML = `<input data-field="qty" type="number" min="1" step="1" aria-label="Cantidad" value="${htmlEscape(item.qty)}">
+        <input data-field="name" type="text" aria-label="Equipo" placeholder="Equipo" value="${htmlEscape(item.name)}">
+        <button class="bulto-mini-btn" type="button" title="Quitar equipo" aria-label="Quitar equipo">&times;</button>`;
+      row.querySelectorAll('input').forEach(input => input.addEventListener('input', () => {
+        item[input.dataset.field] = input.value;
+        saveManualRemito();
+      }));
+      row.querySelector('button').addEventListener('click', () => {
+        bulto.items.splice(itemIndex, 1);
+        saveManualRemito();
+        renderManualBultos();
+      });
+      items.appendChild(row);
+    });
+    const add = document.createElement('button');
+    add.className = 'btn btn-ghost';
+    add.type = 'button';
+    add.textContent = '+ EQUIPO';
+    add.addEventListener('click', () => {
+      bulto.items.push({ name: '', qty: 1 });
+      saveManualRemito();
+      renderManualBultos();
+      list.children[index].querySelector('.manual-remito-row:last-of-type input[data-field="name"]').focus();
+    });
+    items.appendChild(add);
+    list.appendChild(card);
+  });
+}
+
+function resetManualRemito() {
+  if (!confirm('¿Crear un nuevo remito y borrar el borrador manual actual?')) return;
+  manualRemito = createManualRemito();
+  saveManualRemito();
+  openManualRemito();
+}
+
+function printManualRemito() {
+  if (!manualRemito.fecha) {
+    showToast('Completá la fecha del remito.');
+    document.getElementById('manual-remito-fecha').focus();
+    return;
+  }
+  const printBultos = [];
+  for (const [index, bulto] of manualRemito.bultos.entries()) {
+    const items = [];
+    for (const item of bulto.items) {
+      if (!item.name.trim()) continue;
+      const qty = Number(item.qty);
+      if (!Number.isInteger(qty) || qty < 1) {
+        showToast(`Revisá la cantidad de ${item.name} en ${bulto.name || `BULTO ${index + 1}`}.`);
+        return;
+      }
+      items.push({ name: item.name.trim(), qty });
+    }
+    if (items.length) printBultos.push({ name: bulto.name.trim() || `BULTO ${index + 1}`, items });
+  }
+  if (!printBultos.length) {
+    showToast('Agregá al menos un equipo a un bulto antes de imprimir.');
+    return;
+  }
+  const pdfEl = document.getElementById('pdf-pages');
+  pdfEl.innerHTML = buildRemitoPage({ ...manualRemito, bultos: printBultos });
+  printElementAndRestore(pdfEl, `Remito_${manualRemito.fecha}`);
+}
+
+function buildRemitoPage(manualData = null) {
+  if (!manualData) normalizeBultos();
+  const ev = manualData || getEventData();
+  const now = new Date();
+  const dateStr = manualData?.fecha ? manualData.fecha.split('-').reverse().join('/') : `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getFullYear()).slice(-2)}`;
+  const rowsByKey = manualData ? {} : Object.fromEntries(getAssignedEquipmentRows().map(row => [row.sourceKey, row]));
+  const remitoBultos = manualData ? manualData.bultos : bultos;
+  const remitoItemCount = remitoBultos.reduce((total, bulto) => total + (bulto.items || []).length, 0);
+  const remitoHasManyRows = remitoItemCount + remitoBultos.length > 22;
+  const bultoBlocks = remitoBultos.map((bulto, index) => {
     const bultoName = bulto.name || `BULTO ${index + 1}`;
     const itemRows = (bulto.items || [])
       .map(item => {
-        const source = rowsByKey[item.sourceKey];
+        const source = manualData ? item : rowsByKey[item.sourceKey];
         if (!source) return '';
         return `<div class="remito-bulto-row">
           <div class="remito-bulto-qty">${htmlEscape(item.qty)}</div>
@@ -3545,8 +3737,8 @@ function buildRemitoPage() {
   return `<div class="remito-page${remitoHasManyRows ? ' compact' : ''}">
     <div class="remito-top">
       <div class="remito-logo-row">
-        ${logoSrc ? `<img class="remito-logo-mark" src="${logoSrc}" alt="Congress Rental">` : '<div class="pdf-logo">Congress Rental</div>'}
-        <div class="remito-company"><b>Congress Rental</b><br>Antonio Beruti 1638<br>B1604 Florida Oeste</div>
+        ${logoSrc ? `<img class="remito-logo-mark" src="${logoSrc}" alt="Punto Baires">` : '<div class="pdf-logo">Punto Baires</div>'}
+        <div class="remito-company"><b>Punto Baires</b><br>Antonio Beruti 1638<br>B1604 Florida Oeste</div>
       </div>
       <div>
         <div class="remito-kind">REMITO DOCUMENTO NO VALIDO COMO FACTURA</div>
@@ -3554,9 +3746,9 @@ function buildRemitoPage() {
       </div>
     </div>
     <div class="remito-data-grid">
-      <div class="remito-line full"><span class="remito-label">Cliente:</span><span class="remito-value">${htmlEscape(ev.evento)}</span></div>
+      <div class="remito-line full"><span class="remito-label">Nombre de evento:</span><span class="remito-value">${htmlEscape(ev.evento)}</span></div>
       <div class="remito-line"><span class="remito-label">Domicilio:</span></div>
-      <div class="remito-line"><span class="remito-label">Localidad:</span></div>
+      <div class="remito-line"><span class="remito-label">Locación:</span><span class="remito-value">${htmlEscape((manualData ? ev.locacion : ev.lugar) || '')}</span></div>
       <div class="remito-line"><span class="remito-label">I.V.A.:</span></div>
       <div class="remito-line"><span class="remito-label">C.U.I.T.:</span></div>
     </div>

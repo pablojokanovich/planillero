@@ -939,36 +939,106 @@
     resetFreelancerForm();
   };
 
-  function buildExcelData(orden, lugar, selectedValues = Object.values(selected), eventDays = days) {
-    const headers = ['N° de Orden','Lugar','Sala','Fecha','Horario','Tipo','Vianda','Alimentación','Nombre y Apellido','Puesto'];
-    const rows = [headers];
+  function excelEscape(value) {
+    return String(value ?? '').replace(/[&<>"']/g, ch => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[ch]));
+  }
+
+  function excelDateShort(dateValue) {
+    const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    const date = new Date(dateValue + 'T12:00:00');
+    return `${date.getDate()}-${months[date.getMonth()]}`;
+  }
+
+  function dayTypeChecks(tipo) {
+    return {
+      armado: ['armado','pruebas','armado_evento'].includes(tipo),
+      evento: ['evento','armado_evento','evento_desarme'].includes(tipo),
+      desarme: ['desarme','evento_desarme'].includes(tipo),
+    };
+  }
+
+  function buildExcelData(evento, orden, lugar, selectedValues = Object.values(selected), eventDays = days) {
+    const headers = ['OS','NOMBRE','SALA','LUGAR','FECHA','ARMADO','EVENTO','DESARME','OPERADOR'];
+    const detailRows = [];
 
     selectedValues.forEach(sel => {
       const {fl, puesto, sala} = sel;
       const flDays = selectedEventDays(sel, eventDays);
 
       flDays.forEach(day => {
-        const date = new Date(day.date+'T12:00:00');
-        const fecha = date.toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'});
-        const tipo = day.tipo==='evento'?'Evento':day.tipo==='pruebas'?'Armado y Pruebas':day.tipo==='armado_evento'?'Armado y Evento':day.tipo==='evento_desarme'?'Evento y Desarme':day.tipo==='desarme'?'Desarme':'Armado';
-        const horario = day.horario ? `${parseInt(day.horario.split(':')[0])}:${day.horario.split(':')[1]} hs` : '';
+        const checks = dayTypeChecks(day.tipo);
 
-        rows.push([
-          orden,
-          lugar,
-          sala||'',
-          fecha,
-          horario,
-          tipo,
-          day.vianda ? 'Sí' : 'No',
-          foodLabel(fl.alimentacion),
-          fl.nombre,
-          puesto||''
-        ]);
+        detailRows.push({
+          date: day.date,
+          sala: sala || '',
+          operador: fl.nombre,
+          values: [
+            orden,
+            evento,
+            sala||'',
+            lugar,
+            excelDateShort(day.date),
+            checks.armado,
+            checks.evento,
+            checks.desarme,
+            fl.nombre
+          ]
+        });
       });
     });
 
-    return {headers, rows};
+    detailRows.sort((a, b) =>
+      a.date.localeCompare(b.date) ||
+      a.sala.localeCompare(b.sala) ||
+      a.operador.localeCompare(b.operador)
+    );
+
+    return {headers, rows: [headers, ...detailRows.map(row => row.values)]};
+  }
+
+  function downloadCitacionesExcelHtml(filename, rows) {
+    const columnWidths = [92, 170, 160, 140, 105, 95, 95, 105, 175];
+    const checkCell = value => `<td class="check">${value ? '&#9745;' : '&#9744;'}</td>`;
+    const htmlRows = rows.map((row, ri) => {
+      if (ri === 0) {
+        return `<tr>${row.map((cell, ci) => `<th style="width:${columnWidths[ci]}px">${excelEscape(cell)}</th>`).join('')}</tr>`;
+      }
+      return `<tr>
+        <td class="os">${excelEscape(row[0])}</td>
+        <td class="strong">${excelEscape(row[1])}</td>
+        <td class="strong">${excelEscape(row[2])}</td>
+        <td>${excelEscape(row[3])}</td>
+        <td>${excelEscape(row[4])}</td>
+        ${checkCell(row[5])}
+        ${checkCell(row[6])}
+        ${checkCell(row[7])}
+        <td>${excelEscape(row[8])}</td>
+      </tr>`;
+    }).join('');
+    const workbookHtml = `<!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          table { border-collapse: collapse; font-family: Calibri, Arial, sans-serif; font-size: 11pt; }
+          th { background: #ff0000; color: #ffffff; font-weight: 700; text-align: center; border: 1px solid #000000; height: 22px; }
+          td { border: 1px solid #000000; text-align: center; vertical-align: middle; height: 20px; mso-number-format:"\\@"; }
+          .os { background: #ff0000; color: #ffffff; font-weight: 700; }
+          .strong { font-weight: 700; }
+          .check { font-family: "Segoe UI Symbol", "Arial Unicode MS", Calibri, sans-serif; font-size: 13pt; }
+        </style>
+      </head>
+      <body><table>${htmlRows}</table></body>
+      </html>`;
+    const blob = new Blob(['\ufeff', workbookHtml], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   // ---- GENERATE ----
@@ -1158,34 +1228,8 @@
       const orden   = document.getElementById('f-orden').value.trim();
       const lugar   = document.getElementById('f-lugar').value.trim();
 
-      const {headers, rows} = buildExcelData(orden, lugar);
-
-      const ws = XLSX.utils.aoa_to_sheet(rows);
-
-      // Column widths
-      ws['!cols'] = [
-        {wch:14}, // N° Orden
-        {wch:28}, // Lugar
-        {wch:12}, // Sala
-        {wch:12}, // Fecha
-        {wch:12}, // Horario
-        {wch:22}, // Tipo
-        {wch:10}, // Vianda
-        {wch:16}, // Alimentación
-        {wch:26}, // Nombre
-        {wch:28}  // Puesto
-      ];
-
-      // Style header row bold (basic via SheetJS)
-      headers.forEach((_, ci) => {
-        const cellRef = XLSX.utils.encode_cell({r:0, c:ci});
-        if (!ws[cellRef]) return;
-        ws[cellRef].s = { font: { bold: true }, fill: { fgColor: { rgb: 'CC1A1A' } }, fontColor: { rgb: 'FFFFFF' } };
-      });
-
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, 'Citaciones');
-      XLSX.writeFile(wb, `citaciones_${evento.replace(/\s+/g,'_')}.xlsx`);
+      const {rows} = buildExcelData(evento, orden, lugar);
+      downloadCitacionesExcelHtml(`citaciones_${evento.replace(/\s+/g,'_')}.xls`, rows);
     };
 
     showView('citaciones');

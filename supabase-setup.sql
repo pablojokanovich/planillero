@@ -127,13 +127,16 @@ create policy "Shared inventory items can be deleted" on public.inventory_items 
 create table if not exists public.freelancers (
   id bigint primary key,
   nombre text not null check (length(trim(nombre)) > 0),
-  area text not null check (area in ('CCTV', 'Sonido', 'Iluminacion', 'Video', 'Traduccion', 'Computers', 'Otros')),
+  area text not null check (area in ('CCTV', 'Sonido', 'Iluminacion', 'Video', 'Luces', 'Traduccion', 'Computers', 'Otros')),
   telefono text not null default '',
   alimentacion text not null default 'comun' check (alimentacion in ('comun', 'vegetariano', 'sin_tacc')),
   created_at timestamptz not null default now()
 );
 
 alter table public.freelancers add column if not exists alimentacion text not null default 'comun';
+alter table public.freelancers drop constraint if exists freelancers_area_check;
+alter table public.freelancers add constraint freelancers_area_check
+check (area in ('CCTV', 'Sonido', 'Iluminacion', 'Video', 'Luces', 'Traduccion', 'Computers', 'Otros'));
 alter table public.freelancers drop constraint if exists freelancers_alimentacion_check;
 alter table public.freelancers add constraint freelancers_alimentacion_check
 check (alimentacion in ('comun', 'vegetariano', 'sin_tacc'));
