@@ -65,7 +65,7 @@
   .order-group > summary::before { content: '›'; color: var(--red); font: 700 20px var(--mono); transition: transform .15s; }
   .order-group[open] > summary::before { transform: rotate(90deg); }
   .order-label { color: var(--muted); font: 9px var(--mono); letter-spacing: 1px; }
-  .order-number { color: var(--white); font: 700 15px var(--mono); }
+  .order-number { color: var(--white); font: 700 15px var(--mono); overflow-wrap: anywhere; }
   .order-count { margin-left: auto; padding: 4px 7px; color: #ff858a; border: 1px solid #653236; font: 9px var(--mono); letter-spacing: 1px; }
   .order-table-wrap { overflow-x: auto; border-top: 1px solid #303030; }
   table { width: 100%; border-collapse: collapse; min-width: 760px; }
@@ -163,7 +163,7 @@
   </section>
 
   <section class="toolbar" aria-label="Filtros">
-    <input id="search" type="search" placeholder="Buscar por OS, lugar, sala o líder..." autocomplete="off">
+    <input id="search" type="search" placeholder="Buscar por OS, evento, lugar, sala o líder..." autocomplete="off">
     <select id="area-filter" aria-label="Filtrar por área"><option value="">TODAS LAS ÁREAS</option></select>
     <button id="refresh" type="button">↻ ACTUALIZAR</button>
   </section>
@@ -316,11 +316,16 @@ function createDocumentRow(doc) {
   return row;
 }
 
+function getDocumentEventName(doc) {
+  const snapshot = normalizeEventSnapshot(doc.event_data);
+  return String(snapshot?.ev?.evento || '').trim();
+}
+
 function render() {
   const query = searchEl.value.trim().toLowerCase();
   const area = areaEl.value;
   const filtered = documents.filter(doc => {
-    const haystack = [doc.os, doc.lugar, doc.sala, doc.area, doc.lider, doc.filename].join(' ').toLowerCase();
+    const haystack = [doc.os, getDocumentEventName(doc), doc.lugar, doc.sala, doc.area, doc.lider, doc.filename].join(' ').toLowerCase();
     return (!query || haystack.includes(query)) && (!area || doc.area === area);
   });
 
@@ -358,8 +363,9 @@ function render() {
       orderDetails.open = true;
       const orderSummary = document.createElement('summary');
       const orderName = document.createElement('span');
-      const orderLabel = document.createElement('span'); orderLabel.className = 'order-label'; orderLabel.textContent = 'NÚMERO DE ORDEN';
-      const orderNumber = document.createElement('span'); orderNumber.className = 'order-number'; orderNumber.textContent = orderGroup.label;
+      const eventNames = [...new Set(orderGroup.documents.map(getDocumentEventName).filter(Boolean))];
+      const orderLabel = document.createElement('span'); orderLabel.className = 'order-label'; orderLabel.textContent = eventNames.length ? 'NÚMERO DE ORDEN / EVENTO' : 'NÚMERO DE ORDEN';
+      const orderNumber = document.createElement('span'); orderNumber.className = 'order-number'; orderNumber.textContent = [orderGroup.label, ...eventNames].join(' · ');
       orderName.append(orderLabel, document.createElement('br'), orderNumber);
       const orderCount = document.createElement('span'); orderCount.className = 'order-count';
       orderCount.textContent = `${orderGroup.documents.length} PDF`;
