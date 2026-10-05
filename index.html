@@ -4118,6 +4118,9 @@ async function savePdfMetadata(metadata) {
 
 function stripInternalMetadata(metadata) {
   const clean = { ...metadata };
+  if (clean.event_data && Array.isArray(metadata.__deposit_items)) {
+    clean.event_data = { ...clean.event_data, deposit_items: metadata.__deposit_items };
+  }
   delete clean.evento;
   delete clean.__deposit_items;
   return clean;
@@ -4342,14 +4345,16 @@ async function generateAndUploadPdf(pdfEl, filename, metadata) {
       file_size: pdfBlob.size,
     });
     let depositUrl = '';
+    let depositError = '';
     try {
       const checklist = await createDepositChecklist(savedPdf, metadata);
       if (checklist) depositUrl = buildDepositUrl(checklist);
     } catch (checklistError) {
       console.error('Deposit checklist error:', checklistError);
+      depositError = 'PDF guardado, pero no se pudo crear Depósito. Podés reintentarlo desde Planillas Hechas.';
     }
     toastEl.style.display = prevDisplay;
-    showToast(depositUrl ? `PDF online y deposito creado: ${depositUrl}` : 'PDF guardado y disponible online');
+    showToast(depositError || (depositUrl ? `PDF online y deposito creado: ${depositUrl}` : 'PDF guardado y disponible online'));
   } catch (e) {
     console.error('Supabase upload error:', e);
     const toastEl2 = document.getElementById('toast');
