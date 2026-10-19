@@ -2412,6 +2412,7 @@ let quantities = {};
 let observations = {};
 let bultos = [];
 let bultoCounter = 0;
+let archiveRemitoItems = [];
 let eventId = createEventId();
 
 const VMIX_CATEGORY = 'vMix';
@@ -2555,6 +2556,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   if (currentSalaId) switchAreaInSala(currentSalaId, currentArea);
   updateFloatSummary();
   if (recovered) showToast('Planilla recuperada automáticamente.');
+  if (recovered && isArchivedRemito()) goToStep(4);
 });
 
 // ════════════════════════════════════════
@@ -2992,6 +2994,18 @@ function updateFloatSummary() {
 //  STATE PERSISTENCE
 // ════════════════════════════════════════
 
+function isArchivedRemito() {
+  return new URLSearchParams(window.location.search).get('remitoArchivo') === '1';
+}
+
+function plannerDraftStorage() {
+  return isArchivedRemito() ? sessionStorage : localStorage;
+}
+
+function plannerDraftKey() {
+  return isArchivedRemito() ? 'cr_remito_archivo_planilla' : 'cr_deposito';
+}
+
 function saveState() {
   const state = {
     version: 2,
@@ -3006,18 +3020,31 @@ function saveState() {
       notas: document.getElementById('ev-notas').value,
     },
     salas, salaCounter, currentSalaId, currentArea, quantities, observations, bultos, bultoCounter,
-    remitoNumero: document.getElementById('remito-numero').value
+    remitoNumero: document.getElementById('remito-numero').value,
+    archiveRemitoItems
   };
-  try { localStorage.setItem('cr_deposito', JSON.stringify(state)); } catch(e) {}
+  try { plannerDraftStorage().setItem(plannerDraftKey(), JSON.stringify(state)); } catch(e) {}
 }
 
 function loadState() {
   try {
-    const raw = localStorage.getItem('cr_deposito');
+    const raw = plannerDraftStorage().getItem(plannerDraftKey());
     if (!raw) return false;
     const state = JSON.parse(raw);
     if (!state || !Array.isArray(state.salas)) return false;
     const ev = state.ev || {};
+    archiveRemitoItems = isArchivedRemito() && Array.isArray(state.archiveRemitoItems) ? state.archiveRemitoItems : [];
+    // Archived equipment may no longer exist in the current inventory.
+    for (const item of archiveRemitoItems) {
+      const areaKey = Object.keys(AREAS).find(key => AREAS[key].label === item.area);
+      if (!areaKey) continue;
+      let category = AREAS[areaKey].data.find(row => row.cat === item.category);
+      if (!category) {
+        category = { cat: item.category, items: [] };
+        AREAS[areaKey].data.push(category);
+      }
+      if (!category.items.includes(item.equipment)) category.items.push(item.equipment);
+    }
     document.getElementById('remito-numero').value = state.remitoNumero || '';
     ['os','evento','lugar','armado','desarme','lider','notas'].forEach(field => {
       const input = document.getElementById(`ev-${field}`);
@@ -3097,7 +3124,8 @@ function restoreQuantities() {
 function clearAll() {
   if (!confirm('¿Limpiar TODOS los datos del evento?')) return;
   quantities = {}; observations = {}; bultos = []; bultoCounter = 0; salas = []; salaCounter = 0; currentSalaId = null; eventId = createEventId();
-  try { localStorage.removeItem('cr_deposito'); } catch(e) {}
+  archiveRemitoItems = [];
+  try { plannerDraftStorage().removeItem(plannerDraftKey()); } catch(e) {}
   document.querySelectorAll('input[type="text"], input[type="date"]').forEach(i => {
     if (!i.closest('#panel-remito-manual')) i.value = '';
   });

@@ -318,7 +318,12 @@ function createDocumentRow(doc) {
   const deleteButton = document.createElement('button');
   deleteButton.className = 'delete-btn'; deleteButton.type = 'button'; deleteButton.textContent = 'ELIMINAR';
   deleteButton.addEventListener('click', () => openDeleteModal(doc));
-  actions.append(link, editButton, deleteButton);
+  const remitoButton = document.createElement('button');
+  remitoButton.className = 'edit-btn';
+  remitoButton.type = 'button';
+  remitoButton.textContent = 'GENERAR REMITO';
+  remitoButton.addEventListener('click', () => openArchivedRemito(doc, remitoButton));
+  actions.append(link, remitoButton, editButton, deleteButton);
   action.appendChild(actions);
   return row;
 }
@@ -830,6 +835,57 @@ async function getRecoverableDepositItems(doc) {
     throw new Error('No se pudieron recuperar los equipos exactos de este PDF. Cargá la planilla en el planillero y generala nuevamente.');
   }
   return rows;
+}
+
+async function openArchivedRemito(doc, button) {
+  if (button.disabled) return;
+  button.disabled = true;
+  button.textContent = 'CARGANDO...';
+  try {
+    let items;
+    if (normalizeEventSnapshot(doc.event_data)) {
+      items = await getRecoverableDepositItems(doc);
+    } else {
+      const checklist = checklistByPdf.get(doc.id);
+      if (!checklist) throw new Error('Esta planilla antigua no tiene equipos guardados para generar un remito.');
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${DEPOSIT_CHECKLIST_ITEMS_TABLE}?checklist_id=eq.${encodeURIComponent(checklist.id)}&select=sala,area,category,equipment,quantity,observations&order=sort_order.asc`, { headers: archiveHeaders() });
+      if (!res.ok) throw new Error(await res.text());
+      items = await res.json();
+    }
+    if (!items.length) throw new Error('La planilla no tiene equipos guardados.');
+    const snapshot = normalizeEventSnapshot(doc.event_data);
+    const rooms = [];
+    const quantities = {};
+    const observations = {};
+    for (const item of items) {
+      const areaKey = ({ CCTV: 'cctv', SONIDO: 'sonido', VIDEO: 'video', LUCES: 'luces' })[String(item.area).toUpperCase()];
+      if (!areaKey) throw new Error(`No se reconoce el área ${item.area}.`);
+      let room = rooms.find(row => row.name === item.sala);
+      if (!room) {
+        const savedRoom = snapshot?.salas?.find(row => row.name === item.sala);
+        room = { id: savedRoom?.id || `archivo-${rooms.length + 1}`, name: item.sala || 'SALA A' };
+        rooms.push(room);
+      }
+      const key = `${room.id}::${areaKey}::${item.category}::${item.equipment}`;
+      quantities[key] = (quantities[key] || 0) + Number(item.quantity);
+      if (item.observations) observations[key] = item.observations;
+    }
+    const state = {
+      version: 2, eventId: `remito-${doc.id}`, ev: { ...(snapshot?.ev || {}), os: doc.os || '',
+        evento: snapshot?.ev?.evento || '', lugar: doc.lugar || '', armado: doc.armado || '',
+        desarme: doc.desarme || '', lider: doc.lider || '' },
+      salas: rooms, salaCounter: rooms.length, currentSalaId: rooms[0].id, currentArea: 'cctv',
+      quantities, observations, bultos: snapshot?.bultos || [], bultoCounter: snapshot?.bultoCounter || 0,
+      remitoNumero: '', archiveRemitoItems: items
+    };
+    sessionStorage.setItem('cr_remito_archivo_planilla', JSON.stringify(state));
+    window.location.href = 'index.html?remitoArchivo=1';
+  } catch (error) {
+    console.error('No se pudo generar remito desde archivo:', error);
+    setStatus(`No se pudo generar el remito: ${error.message || error}`, true);
+    button.disabled = false;
+    button.textContent = 'GENERAR REMITO';
+  }
 }
 
 async function recoverDepositChecklist(doc, button) {
