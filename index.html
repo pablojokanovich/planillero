@@ -1016,7 +1016,7 @@
   .remito-logo-mark { width: 118px; height: 118px; object-fit: contain; display: block; }
   .remito-company { font-size: 12px; line-height: 1.25; }
   .remito-kind { font-size: 10px; color: #8f3030; border-top: 1px solid #b34040; border-bottom: 1px solid #b34040; padding: 4px 0; font-weight: 700; }
-  .remito-date { margin-top: 18px; border-bottom: 1px solid #b34040; padding-bottom: 4px; font-size: 18px; font-weight: 700; }
+  .remito-date { margin-top: 18px; border-bottom: 1px solid #b34040; padding-bottom: 4px; font-size: 18px; font-weight: 700; overflow-wrap: anywhere; }
 
   .remito-data-grid {
     display: grid;
@@ -2176,6 +2176,9 @@
     <div class="section-subtitle">// ARRASTRÁ EQUIPOS A CADA BULTO Y GENERÁ EL REMITO</div>
     <span class="red-line"></span>
 
+    <div class="manual-remito-fields">
+      <label>NRO. DE REMITO<input id="remito-numero" type="text" autocomplete="off" oninput="saveState()"></label>
+    </div>
     <div class="bultos-layout">
       <div class="bultos-panel">
         <div class="bultos-panel-header">
@@ -2215,6 +2218,7 @@
       <label>NOMBRE DE EVENTO<input id="manual-remito-evento" type="text" oninput="updateManualRemitoField('evento', this.value)"></label>
       <label>LOCACIÓN<input id="manual-remito-locacion" type="text" oninput="updateManualRemitoField('locacion', this.value)"></label>
       <label>FECHA<input id="manual-remito-fecha" type="date" oninput="updateManualRemitoField('fecha', this.value)"></label>
+      <label>NRO. DE REMITO<input id="manual-remito-numero" type="text" autocomplete="off" oninput="updateManualRemitoField('numero', this.value)"></label>
     </div>
     <div class="bultos-panel-header">
       <div class="bultos-panel-title">BULTOS</div>
@@ -3001,7 +3005,8 @@ function saveState() {
       lider: document.getElementById('ev-lider').value,
       notas: document.getElementById('ev-notas').value,
     },
-    salas, salaCounter, currentSalaId, currentArea, quantities, observations, bultos, bultoCounter
+    salas, salaCounter, currentSalaId, currentArea, quantities, observations, bultos, bultoCounter,
+    remitoNumero: document.getElementById('remito-numero').value
   };
   try { localStorage.setItem('cr_deposito', JSON.stringify(state)); } catch(e) {}
 }
@@ -3013,6 +3018,7 @@ function loadState() {
     const state = JSON.parse(raw);
     if (!state || !Array.isArray(state.salas)) return false;
     const ev = state.ev || {};
+    document.getElementById('remito-numero').value = state.remitoNumero || '';
     ['os','evento','lugar','armado','desarme','lider','notas'].forEach(field => {
       const input = document.getElementById(`ev-${field}`);
       if (input) input.value = ev[field] || '';
@@ -3054,6 +3060,7 @@ function getEventSnapshot() {
     observations: { ...observations },
     bultos: JSON.parse(JSON.stringify(bultos)),
     bultoCounter,
+    remitoNumero: document.getElementById('remito-numero').value,
   };
 }
 
@@ -3555,7 +3562,7 @@ let manualRemito = null;
 function createManualRemito() {
   const now = new Date();
   return {
-    evento: '', locacion: '',
+    evento: '', locacion: '', numero: '',
     fecha: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
     bultos: [{ name: 'BULTO 1', items: [{ name: '', qty: 1 }] }]
   };
@@ -3577,6 +3584,7 @@ function openManualRemito() {
         manualRemito = {
           evento: String(saved.evento || saved.cliente || ''), locacion: String(saved.locacion || ''),
           fecha: String(saved.fecha || createManualRemito().fecha),
+          numero: String(saved.numero || ''),
           bultos: saved.bultos.filter(bulto => bulto && Array.isArray(bulto.items)).map((bulto, index) => ({
             name: String(bulto.name || `BULTO ${index + 1}`),
             items: bulto.items.filter(item => item && typeof item === 'object').map(item => ({ name: String(item.name || ''), qty: item.qty ?? 1 }))
@@ -3589,7 +3597,7 @@ function openManualRemito() {
   document.body.classList.add('manual-remito-mode');
   document.getElementById('panel-remito-manual').classList.add('active');
   document.getElementById('float-summary').style.display = 'none';
-  ['evento', 'locacion', 'fecha'].forEach(field => {
+  ['evento', 'locacion', 'fecha', 'numero'].forEach(field => {
     document.getElementById(`manual-remito-${field}`).value = manualRemito[field];
   });
   renderManualBultos();
@@ -3708,6 +3716,7 @@ function printManualRemito() {
 function buildRemitoPage(manualData = null) {
   if (!manualData) normalizeBultos();
   const ev = manualData || getEventData();
+  const remitoNumero = manualData ? manualData.numero : document.getElementById('remito-numero').value;
   const now = new Date();
   const dateStr = manualData?.fecha ? manualData.fecha.split('-').reverse().join('/') : `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getFullYear()).slice(-2)}`;
   const rowsByKey = manualData ? {} : Object.fromEntries(getAssignedEquipmentRows().map(row => [row.sourceKey, row]));
@@ -3742,6 +3751,7 @@ function buildRemitoPage(manualData = null) {
       </div>
       <div>
         <div class="remito-kind">REMITO DOCUMENTO NO VALIDO COMO FACTURA</div>
+        <div class="remito-date"><b>NRO. DE REMITO</b> <span class="remito-value">${htmlEscape(remitoNumero || '')}</span></div>
         <div class="remito-date"><b>FECHA</b> <span class="remito-value">${dateStr}</span></div>
       </div>
     </div>
@@ -5506,6 +5516,7 @@ function duplicateStoredEvent(record) {
 
   eventId = createEventId();
   currentSalaId = salas[0].id;
+  document.getElementById('remito-numero').value = '';
   currentArea = 'cctv';
   migrateLegacyVmixQuantities();
   document.getElementById('sala-contents').replaceChildren();

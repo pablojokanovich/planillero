@@ -684,6 +684,7 @@ function openEditedSnapshotInPlanner() {
     version: 2,
     eventId: snapshot.event_id || `archivo-${pendingEdit.id}`,
     ev: snapshot.ev || {},
+    remitoNumero: snapshot.remitoNumero || '',
     salas: Array.isArray(snapshot.salas) ? snapshot.salas : [],
     salaCounter: Number(snapshot.salaCounter) || (Array.isArray(snapshot.salas) ? snapshot.salas.length : 0),
     currentSalaId: snapshot.currentSalaId || snapshot.salas?.[0]?.id || null,
