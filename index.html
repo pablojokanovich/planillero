@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="supabase-config.js"></script>
+<script src="agenda-import.js"></script>
 <style>
   :root {
     --red: #E8000A;
@@ -2414,6 +2415,8 @@ let bultos = [];
 let bultoCounter = 0;
 let archiveRemitoItems = [];
 let eventId = createEventId();
+let agendaEventKey = '';
+let agendaImportNotice = '';
 
 const VMIX_CATEGORY = 'vMix';
 const VMIX_KIT_ITEM = 'KIT VMIX';
@@ -2548,6 +2551,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   const onlineCombosLoaded = await loadOnlineCombos();
   if (!onlineCombosLoaded) loadCombos();
   const recovered = loadState();
+  const imported = applyAgendaPreload(recovered);
   migrateLegacyVmixQuantities();
   if (salas.length === 0) addSala('SALA A', false);
   renderSalaTabs();
@@ -2555,7 +2559,9 @@ window.addEventListener('DOMContentLoaded', async () => {
   restoreQuantities();
   if (currentSalaId) switchAreaInSala(currentSalaId, currentArea);
   updateFloatSummary();
-  if (recovered) showToast('Planilla recuperada automáticamente.');
+  if (agendaImportNotice) showToast(agendaImportNotice);
+  else if (imported) showToast('Datos del evento precargados desde la agenda.');
+  else if (recovered) showToast('Planilla recuperada automáticamente.');
   if (recovered && isArchivedRemito()) goToStep(4);
 });
 
@@ -2620,7 +2626,7 @@ function renderSalaTabs() {
     tab.onclick = () => switchSala(sala.id);
     tab.ondblclick = () => renameSala(sala.id);
     tab.title = 'Doble click para renombrar';
-    tab.innerHTML = sala.name +
+    tab.innerHTML = htmlEscape(sala.name) +
       (total > 0 ? `<span class="sala-tab-count">${total}</span>` : '') +
       `<button class="sala-tab-remove" onclick="removeSala('${sala.id}', event)">&#215;</button>`;
     bar.appendChild(tab);
@@ -3010,6 +3016,7 @@ function saveState() {
   const state = {
     version: 2,
     eventId,
+    agendaEventKey,
     ev: {
       os: document.getElementById('ev-os').value,
       evento: document.getElementById('ev-evento').value,
@@ -3059,10 +3066,35 @@ function loadState() {
     currentSalaId = salas.some(s => s.id === state.currentSalaId) ? state.currentSalaId : (salas[0]?.id || null);
     currentArea = AREAS[state.currentArea] ? state.currentArea : 'cctv';
     eventId = state.eventId || createEventId();
+    agendaEventKey = typeof state.agendaEventKey === 'string' ? state.agendaEventKey : '';
     updateHeaderInfo();
     return Boolean(salas.length || Object.values(ev).some(Boolean) || Object.keys(quantities).length);
   } catch (error) {
     console.warn('No se pudo recuperar la planilla local:', error);
+    return false;
+  }
+}
+
+function applyAgendaPreload(recovered) {
+  if (isArchivedRemito()) return false;
+  let payload;
+  try { payload = CongressAgendaImport.read(window.location.hash); }
+  catch (error) { agendaImportNotice = 'No se pudo precargar el evento de la agenda.'; return false; }
+  if (!payload) return false;
+  const fragment = new URLSearchParams(window.location.hash.slice(1));
+  fragment.delete('agenda');
+  history.replaceState(null, '', window.location.pathname + window.location.search + (fragment.size ? '#' + fragment.toString() : ''));
+  if (recovered && agendaEventKey === payload.eventKey) return false;
+  if (recovered && !confirm('Hay otra planilla en este navegador. ¿Cargar el evento de la agenda? Se conservará una copia del borrador anterior, pero sus equipos y bultos no se mezclarán con el nuevo evento.')) return false;
+  try {
+    const storage = plannerDraftStorage();
+    const previous = storage.getItem(plannerDraftKey());
+    if (recovered && previous) storage.setItem('cr_agenda_backup:' + encodeURIComponent(agendaEventKey || eventId), previous);
+    const next = CongressAgendaImport.draft(payload, createEventId());
+    storage.setItem(plannerDraftKey(), JSON.stringify(next));
+    return loadState();
+  } catch (error) {
+    agendaImportNotice = 'No se pudo guardar la precarga. El borrador anterior no fue reemplazado.';
     return false;
   }
 }
@@ -3123,7 +3155,7 @@ function restoreQuantities() {
 
 function clearAll() {
   if (!confirm('¿Limpiar TODOS los datos del evento?')) return;
-  quantities = {}; observations = {}; bultos = []; bultoCounter = 0; salas = []; salaCounter = 0; currentSalaId = null; eventId = createEventId();
+  quantities = {}; observations = {}; bultos = []; bultoCounter = 0; salas = []; salaCounter = 0; currentSalaId = null; eventId = createEventId(); agendaEventKey = '';
   archiveRemitoItems = [];
   try { plannerDraftStorage().removeItem(plannerDraftKey()); } catch(e) {}
   document.querySelectorAll('input[type="text"], input[type="date"]').forEach(i => {
@@ -3220,14 +3252,14 @@ function buildSummary() {
   const hdr = document.createElement('div');
   hdr.className = 'summary-header';
   hdr.innerHTML = `<div class="summary-meta">
-    <div class="meta-item"><label>OS</label><span>${ev.os}</span></div>
-    <div class="meta-item"><label>EVENTO</label><span>${ev.evento}</span></div>
-    <div class="meta-item"><label>LUGAR</label><span>${ev.lugar}</span></div>
+    <div class="meta-item"><label>OS</label><span>${htmlEscape(ev.os)}</span></div>
+    <div class="meta-item"><label>EVENTO</label><span>${htmlEscape(ev.evento)}</span></div>
+    <div class="meta-item"><label>LUGAR</label><span>${htmlEscape(ev.lugar)}</span></div>
     <div class="meta-item"><label>SALAS</label><span>${salas.map(s=>s.name).join(', ')}</span></div>
-    <div class="meta-item"><label>ARMADO</label><span>${ev.armado}</span></div>
-    <div class="meta-item"><label>DESARME</label><span>${ev.desarme}</span></div>
-    <div class="meta-item"><label>LÍDER</label><span>${ev.lider}</span></div>
-    ${ev.notas ? `<div class="meta-item"><label>NOTAS</label><span>${ev.notas}</span></div>` : ''}
+    <div class="meta-item"><label>ARMADO</label><span>${htmlEscape(ev.armado)}</span></div>
+    <div class="meta-item"><label>DESARME</label><span>${htmlEscape(ev.desarme)}</span></div>
+    <div class="meta-item"><label>LÍDER</label><span>${htmlEscape(ev.lider)}</span></div>
+    ${ev.notas ? `<div class="meta-item"><label>NOTAS</label><span>${htmlEscape(ev.notas)}</span></div>` : ''}
   </div>`;
   container.appendChild(hdr);
 
@@ -3254,7 +3286,7 @@ function buildSummary() {
         const table = document.createElement('table');
         table.className = 'summary-table';
         table.innerHTML = `<thead><tr>
-          <th colspan="2" style="color:var(--red);letter-spacing:2px">${sala.name}</th>
+          <th colspan="2" style="color:var(--red);letter-spacing:2px">${htmlEscape(sala.name)}</th>
           <th style="text-align:center">CANT.</th></tr></thead>`;
         const tbody = document.createElement('tbody');
         for (const cat of items) {
@@ -3860,7 +3892,7 @@ function buildPdfButtons() {
       if (!Object.keys(quantities).some(k => k.startsWith(`${sala.id}::${areaKey}::`))) continue;
       const btn = document.createElement('button');
       btn.className = 'btn btn-primary';
-      btn.innerHTML = `PDF ${sala.name} &middot; ${area.label}`;
+      btn.innerHTML = `PDF ${htmlEscape(sala.name)} &middot; ${area.label}`;
       btn.onclick = () => printSalaArea(sala.id, areaKey);
       group.appendChild(btn);
     }
@@ -4411,7 +4443,7 @@ function buildPdfPage(ev, area, areaItems, salaName) {
       rows += `<tr><td class="equipo-col">${item.name}</td><td class="qty-col">${item.qty}</td><td class="check-col"><div class="pdf-checkbox"></div></td><td class="obs-col">${item.obs}</td></tr>`;
     }
   }
-  const notasRow = ev.notas ? `<div style="font-size:10px;margin-top:8px;color:#444"><b>NOTAS:</b> ${ev.notas}</div>` : '';
+  const notasRow = ev.notas ? `<div style="font-size:10px;margin-top:8px;color:#444"><b>NOTAS:</b> ${htmlEscape(ev.notas)}</div>` : '';
   const logoSrc = document.querySelector('.logo img')?.src || '';
   return `<div class="pdf-page">
     <div class="pdf-header">
@@ -4420,20 +4452,20 @@ function buildPdfPage(ev, area, areaItems, salaName) {
       </div>
       <div style="text-align:right">
         <div class="pdf-area-badge">${area.label}</div>
-        <div style="font-size:11px;font-weight:700;letter-spacing:2px;margin-top:6px;border:2px solid black;padding:2px 10px;display:inline-block">${salaName}</div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;margin-top:6px;border:2px solid black;padding:2px 10px;display:inline-block">${htmlEscape(salaName)}</div>
       </div>
     </div>
     <div class="pdf-event-box">
       <div class="pdf-event-label">NOMBRE DE EVENTO</div>
-      <div class="pdf-event-value">${ev.evento}</div>
+      <div class="pdf-event-value">${htmlEscape(ev.evento)}</div>
     </div>
     <div class="pdf-meta-grid">
-      <div class="pdf-meta-item"><div class="pdf-meta-label">OS</div><div class="pdf-meta-value">${ev.os}</div></div>
-      <div class="pdf-meta-item"><div class="pdf-meta-label">LUGAR</div><div class="pdf-meta-value">${ev.lugar}</div></div>
-      <div class="pdf-meta-item"><div class="pdf-meta-label">SALA</div><div class="pdf-meta-value">${salaName}</div></div>
-      <div class="pdf-meta-item"><div class="pdf-meta-label">ARMADO</div><div class="pdf-meta-value">${ev.armado}</div></div>
-      <div class="pdf-meta-item"><div class="pdf-meta-label">DESARME</div><div class="pdf-meta-value">${ev.desarme}</div></div>
-      <div class="pdf-meta-item"><div class="pdf-meta-label">LÍDER</div><div class="pdf-meta-value">${ev.lider}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">OS</div><div class="pdf-meta-value">${htmlEscape(ev.os)}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">LUGAR</div><div class="pdf-meta-value">${htmlEscape(ev.lugar)}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">SALA</div><div class="pdf-meta-value">${htmlEscape(salaName)}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">ARMADO</div><div class="pdf-meta-value">${htmlEscape(ev.armado)}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">DESARME</div><div class="pdf-meta-value">${htmlEscape(ev.desarme)}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">LÍDER</div><div class="pdf-meta-value">${htmlEscape(ev.lider)}</div></div>
     </div>
     ${notasRow}
     <table class="pdf-table" style="margin-top:12px">
@@ -4441,8 +4473,8 @@ function buildPdfPage(ev, area, areaItems, salaName) {
       <tbody>${rows}</tbody>
     </table>
     <div class="pdf-footer">
-      <div><div>Generado: ${nowStr}</div><div style="margin-top:2px">LÍDER: ${ev.lider}</div></div>
-      <div class="pdf-sign">${ev.lider}</div>
+      <div><div>Generado: ${nowStr}</div><div style="margin-top:2px">LÍDER: ${htmlEscape(ev.lider)}</div></div>
+      <div class="pdf-sign">${htmlEscape(ev.lider)}</div>
     </div>
   </div>`;
 }
@@ -5543,6 +5575,7 @@ function duplicateStoredEvent(record) {
   }
 
   eventId = createEventId();
+  agendaEventKey = '';
   currentSalaId = salas[0].id;
   document.getElementById('remito-numero').value = '';
   currentArea = 'cctv';
