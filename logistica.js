@@ -228,7 +228,7 @@
       const table = root.PDF_ARCHIVE_CONFIG[this.tableKey] || this.table;
       try {
         if (this.readOnly) {
-          this.state.rows = (await fetchAll('app_calendar_departures', '*', 'departure_at.asc,id.asc')).map(row => ({ ...row, driver: '', notes: '' }));
+          this.state.rows = (await fetchAll('app_calendar_departures', '*', 'departure_at.asc,id.asc')).map(row => ({ ...row, driver: row.driver || '', notes: '' }));
           this.persist(); this.online = true;
           return this.rows();
         }

@@ -10,6 +10,9 @@ let lastUpdated = '';
 let selectedDay = '';
 let calendarMonth = L.today().slice(0, 7);
 let selectedEvent = '';
+function hasTransportOnDay(group, day) {
+  return transportStore.rows().some(row => row.departure_at.slice(0, 10) === day && L.linkedEvents(row).some(event => event.key === group.key));
+}
 const cacheKey = window.AppAccess.isCalendar() ? 'cr_eventos_documentos_calendar_v1' : 'cr_eventos_documentos_v1';
 try {
   const saved = JSON.parse(localStorage.getItem(cacheKey));
@@ -40,6 +43,7 @@ function renderEventCalendar(groups) {
       transports.get(event.key).push(row);
     }
   }
+  const visibleOnDay = (group, day) => L.eventOnDay(group, day) || (transports.get(group.key) || []).some(row => row.departure_at.slice(0, 10) === day);
   // Assign from all saved events so filtering or selecting a day keeps their colors.
   const colors = new Map();
   const lanes = new Map();
@@ -48,8 +52,12 @@ function renderEventCalendar(groups) {
   for (const group of L.groupEvents(documents)) {
     let hash = 0;
     for (const char of group.key) hash = (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0;
-    const start = group.start || group.end;
-    const end = group.end && group.end >= start ? group.end : start;
+    const eventStart = group.start || group.end;
+    const eventEnd = group.end && group.end >= eventStart ? group.end : eventStart;
+    const tripDays = (transports.get(group.key) || []).map(row => row.departure_at.slice(0, 10));
+    const eventDays = [eventStart, eventEnd, ...tripDays].filter(Boolean).sort();
+    const start = eventDays[0];
+    const end = eventDays[eventDays.length - 1];
     if (start) {
       let lane = laneEnds.findIndex(lastDay => lastDay < start);
       if (lane < 0) lane = laneEnds.length;
@@ -75,11 +83,11 @@ function renderEventCalendar(groups) {
   let html = '<div class="calendar-week calendar-weekdays" role="row">' + ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => `<div role="columnheader">${day}</div>`).join('') + '</div>';
   for (let week = 0; week < 6; week++) {
     const weekDays = dates.slice(week * 7, week * 7 + 7);
-    const weekGroups = groups.filter(group => weekDays.some(day => L.eventOnDay(group, day)));
+    const weekGroups = groups.filter(group => weekDays.some(day => visibleOnDay(group, day)));
     const laneCount = Math.max(1, ...weekGroups.map(group => lanes.get(group.key) + 1));
     html += `<div class="calendar-week event-calendar-week" role="row" style="--event-lanes:${laneCount}">`;
     for (const [column, day] of weekDays.entries()) {
-      const entries = groups.filter(group => L.eventOnDay(group, day));
+      const entries = groups.filter(group => visibleOnDay(group, day));
       const fullLabel = label.format(new Date(`${day}T12:00:00Z`));
       html += `<div class="calendar-day${day.slice(0, 7) !== calendarMonth ? ' other-month' : ''}${day === selectedDay ? ' is-selected' : ''}${day === today ? ' is-today' : ''}" role="gridcell" aria-selected="${day === selectedDay}" data-calendar-date="${day}" style="grid-column:${column + 1}">
         <div class="event-day-heading">
@@ -87,14 +95,20 @@ function renderEventCalendar(groups) {
         ${day === today ? '<span class="calendar-today-label">HOY</span>' : ''}
         </div>
         <div class="calendar-entries">${entries.map(group => {
-          const phase = day === group.start && day === group.end ? 'Armado y desarme' : day === group.start ? 'Armado' : day === group.end ? 'Desarme' : 'En curso';
+          const phase = !L.eventOnDay(group, day) ? 'Transporte' : day === group.start && day === group.end ? 'Armado y desarme' : day === group.start ? 'Armado' : day === group.end ? 'Desarme' : 'En curso';
           const loadedAreas = group.areas.length ? `Planillas cargadas: ${group.areas.join(', ')}` : 'Sin área informada';
           const title = `${group.order || 'Sin orden'} · ${group.name || 'Evento sin nombre'} · ${group.places.join(' / ')} · ${phase} · ${loadedAreas}`;
           const areas = group.areas.map(area => `<span class="calendar-area-check" aria-label="${escape(area)}: planilla cargada">✓ ${escape(area)}</span>`).join('');
-          const trips = transports.get(group.key) || [];
-          const tripLabel = row => `${row.truck_type} · ${L.dateLabel(row.departure_at)} ${row.departure_at.slice(11, 16)}`;
-          const transportMarkup = trips.length ? `<span class="calendar-event-transports">${trips.map(row => `<span class="calendar-transport-badge" title="${escape(`Carga: ${L.dateTimeLabel(row.loading_at)} · Salida: ${L.dateTimeLabel(row.departure_at)}`)}">🚚 ${escape(tripLabel(row))}</span>`).join('')}</span>` : '';
-          const fullTitle = title + (trips.length ? ` · Transporte: ${trips.map(tripLabel).join(' / ')}` : '');
+          const trips = (transports.get(group.key) || []).filter(row => row.departure_at.slice(0, 10) === day);
+          const timeLabel = value => !value ? 'Sin horario' : value.slice(0, 10) === day ? value.slice(11, 16) : L.dateTimeLabel(value);
+          const tripDetails = trips.map(row => {
+            const stops = row.stops.filter(stop => stop.event?.key === group.key);
+            const arrivals = stops.map(stop => timeLabel(stop.eta) + (stops.length > 1 ? ` (${stop.destination})` : '')).join(' / ');
+            return [['Horario de carga', timeLabel(row.loading_at)], ['Horario de salida', timeLabel(row.departure_at)],
+              ['Horario de llegada', arrivals || 'Sin horario'], ['Camión', row.truck_type || 'Sin asignar'], ['Chofer', row.driver || 'Sin asignar']];
+          });
+          const transportMarkup = tripDetails.length ? `<span class="calendar-event-transports">${tripDetails.map(fields => `<span class="calendar-transport-badge">${fields.map(([label, value]) => `<span class="calendar-transport-line"><strong>${escape(label)}:</strong> ${escape(value)}</span>`).join('')}</span>`).join('')}</span>` : '';
+          const fullTitle = title + (tripDetails.length ? ` · Transporte: ${tripDetails.map(fields => fields.map(([label, value]) => `${label}: ${value}`).join(' · ')).join(' / ')}` : '');
           return `<button class="calendar-entry calendar-event event-color-${colors.get(group.key)} ${group.expired ? 'ended' : group.ongoing ? 'ongoing' : 'upcoming'}" type="button" data-event-key="${escape(group.key)}" style="grid-row:${lanes.get(group.key) + 1}" title="${escape(fullTitle)}" aria-label="Seleccionar evento ${escape(fullTitle)}"><span class="calendar-event-order">${escape(group.order || 'Sin orden')}</span><span class="calendar-event-name">${escape(group.name || 'Evento sin nombre')}</span><span class="calendar-event-place">${escape(group.places.join(' / ') || 'Sin locación')}</span><span class="calendar-event-phase">${phase}</span><span class="calendar-event-areas">${areas || '<span class="muted">Sin área informada</span>'}</span>${transportMarkup}</button>`;
         }).join('')}</div>
       </div>`;
@@ -125,8 +139,9 @@ function renderEvents() {
     return;
   }
   const groups = L.groupEvents(documents).filter(group => {
-    const start = group.start || group.end;
-    const end = group.end || group.start;
+    const dates = [group.start, group.end, ...transportStore.rows().filter(row => L.linkedEvents(row).some(event => event.key === group.key)).map(row => row.departure_at.slice(0, 10))].filter(Boolean).sort();
+    const start = dates[0];
+    const end = dates[dates.length - 1];
     const text = [group.order, group.name, ...group.places, ...group.documents.map(doc => `${doc.sala || ''} ${doc.area || ''}`)].join(' ').toLocaleLowerCase('es');
     return (!from || (end && end >= from)) && (!until || (start && start <= until)) && (!query || text.includes(query));
   });
@@ -135,7 +150,7 @@ function renderEvents() {
     (a.end || '9999-12-31').localeCompare(b.end || '9999-12-31') ||
     (a.start || '9999-12-31').localeCompare(b.start || '9999-12-31') ||
     a.order.localeCompare(b.order, 'es', { numeric: true }));
-  const visible = selectedDay ? pending.filter(group => L.eventOnDay(group, selectedDay)) : pending;
+  const visible = selectedDay ? pending.filter(group => L.eventOnDay(group, selectedDay) || hasTransportOnDay(group, selectedDay)) : pending;
   byId('metrics').innerHTML = `<span><strong>${visible.length}</strong>pendientes de desarme</span><span><strong>${groups.length}</strong>eventos registrados</span><span><strong>${groups.filter(group => !group.start && !group.end).length}</strong>sin fecha</span>`;
   byId('events').innerHTML = visible.map(group => {
     return `<details class="event" data-key="${escape(group.key)}" ${open.has(group.key) ? 'open' : ''}>

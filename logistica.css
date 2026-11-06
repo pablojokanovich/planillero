@@ -197,6 +197,8 @@ td a { color: #ff969b; }
 .calendar-entry .calendar-event-areas { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; overflow: visible; white-space: normal; }
 .calendar-entry .calendar-event-transports { display: grid; gap: 3px; margin-top: 4px; overflow: visible; white-space: normal; }
 .calendar-entry .calendar-transport-badge { border-top: 1px solid #ffffff35; padding-top: 3px; color: #f1e2bd; font-size: 10px; line-height: 14px; white-space: normal; overflow-wrap: anywhere; }
+.calendar-entry .calendar-transport-line { display: block; white-space: normal; overflow: visible; }
+.calendar-transport-line strong { font-weight: 500; color: #e0dfe3; }
 .calendar-entry .calendar-area-check { padding: 1px 4px; border: 1px solid #5a9d78; border-radius: 3px; background: #183b2b; color: #baf2cf; font-size: 10px; line-height: 15px; }
 .calendar-area-legend { margin: 0 0 12px; color: #baf2cf; font-size: 12px; }
 .calendar-event-name { white-space: normal !important; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
