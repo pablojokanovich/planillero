@@ -54,5 +54,13 @@
       </section>
     </div>
   </main>
+  <dialog id="event-detail-dialog" aria-labelledby="event-detail-title">
+    <div class="dialog-heading"><h2 id="event-detail-title">Detalle del evento</h2><button class="icon-button" id="close-event-detail" type="button" aria-label="Cerrar detalle del evento">×</button></div>
+    <div class="form-body">
+      <div id="event-detail-content"></div>
+      <p id="event-detail-error" class="form-error" role="alert" hidden></p>
+    </div>
+    <div class="dialog-footer"><button id="dismiss-event-detail" type="button">Cerrar</button><button id="event-detail-assign-truck" class="primary" data-access="full" type="button">🚚 Asignar camión nuevo</button></div>
+  </dialog>
 </body>
 </html>

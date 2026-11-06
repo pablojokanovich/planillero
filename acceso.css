@@ -5,7 +5,7 @@ html[data-trucks-hidden="true"] a[href="salidas.html"] { display: none !importan
 html[data-access-role="calendar"] .departure-sidebar,
 html[data-access-role="calendar"] .event-sidebar,
 html[data-access-role="calendar"] .metrics,
-html[data-access-role="calendar"] dialog,
+html[data-access-role="calendar"] dialog:not(#event-detail-dialog),
 html[data-access-role="calendar"] #new-departure-alert { display: none !important; }
 html[data-access-role="calendar"] .file-actions .deposit-link,
 html[data-access-role="calendar"] .file-actions button,

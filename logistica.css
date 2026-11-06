@@ -195,8 +195,19 @@ td a { color: #ff969b; }
 .events-calendar .calendar-event:hover { filter: brightness(1.12); }
 .events-calendar .calendar-event:focus-visible { outline: 2px solid var(--event-accent, #fff); outline-offset: 1px; }
 .events-calendar .event-card-open { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; flex: 1; gap: 0; width: 100%; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; text-align: left; }
-.events-calendar .event-assign-truck { width: 100%; min-height: 30px; margin-top: 6px; padding: 4px; border-color: var(--event-accent, #aaa); background: #00000030; color: #f7f7f7; font-size: 10px; line-height: 14px; white-space: normal; }
-.events-calendar .event-assign-truck:hover { background: #00000060; }
+#event-detail-dialog { width: min(720px, calc(100% - 24px)); }
+#event-detail-title { min-width: 0; overflow-wrap: anywhere; font-size: 20px; }
+.event-detail-info { display: grid; grid-template-columns: minmax(100px, 140px) minmax(0, 1fr); gap: 6px 12px; margin: 0; font-size: 13px; }
+.event-detail-info dt { color: var(--muted); }
+.event-detail-info dd { margin: 0; overflow-wrap: anywhere; }
+.event-detail-section { margin-top: 22px; }
+.event-detail-section h3 { margin-bottom: 10px; }
+.event-detail-table { min-width: 0; table-layout: fixed; }
+.event-detail-table th, .event-detail-table td { padding: 7px 5px; overflow-wrap: anywhere; }
+.event-detail-table th:last-child, .event-detail-table td:last-child { width: 75px; text-align: right; }
+.event-detail-pdf { min-height: 32px; padding: 5px 8px; font-size: 12px; }
+.event-detail-transport { padding: 12px; border: 1px solid var(--line); border-radius: 4px; margin-top: 10px; }
+.event-detail-transport h4 { margin: 0 0 10px; color: #f1e2bd; }
 .calendar-entry .calendar-event-areas { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; overflow: visible; white-space: normal; }
 .calendar-entry .calendar-event-transports { display: grid; gap: 3px; margin-top: 4px; overflow: visible; white-space: normal; }
 .calendar-entry .calendar-transport-badge { border-top: 1px solid #ffffff35; padding-top: 3px; color: #f1e2bd; font-size: 10px; line-height: 14px; white-space: normal; overflow-wrap: anywhere; }

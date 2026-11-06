@@ -10,6 +10,56 @@ let lastUpdated = '';
 let selectedDay = '';
 let calendarMonth = L.today().slice(0, 7);
 let selectedEvent = '';
+let dialogEvent = null;
+
+function renderEventDetails() {
+  const group = dialogEvent && L.groupEvents(documents).find(group => group.key === dialogEvent.key);
+  if (!group) return;
+  byId('event-detail-title').textContent = L.eventLabel(group);
+  byId('event-detail-assign-truck').hidden = !window.AppAccess.isFull();
+  const trips = transportStore.rows().filter(row => L.linkedEvents(row).some(event => event.key === group.key))
+    .sort((a, b) => a.departure_at.localeCompare(b.departure_at));
+  byId('event-detail-content').innerHTML = `
+    <dl class="event-detail-info"><dt>Locación</dt><dd>${escape(group.places.join(' / ') || 'Sin locación')}</dd>
+      <dt>Armado</dt><dd>${escape(L.dateLabel(group.start))}</dd><dt>Desarme</dt><dd>${escape(L.dateLabel(group.end))}</dd>
+      <dt>Día seleccionado</dt><dd id="event-detail-day">${escape(L.dateLabel(dialogEvent.day))}</dd></dl>
+    <section class="event-detail-section"><h3>Planillas cargadas</h3>
+      <div class="table-wrap"><table class="event-detail-table"><thead><tr><th>Área</th><th>Sala</th><th>PDF</th></tr></thead><tbody>${group.documents.map(doc =>
+        `<tr><td>${escape(doc.area || '—')}</td><td>${escape(doc.sala || '—')}</td><td><button type="button" class="event-detail-pdf" data-pdf-path="${escape(doc.storage_path || '')}" aria-label="Abrir PDF de ${escape(doc.area || 'área sin informar')}, ${escape(doc.sala || 'sala sin informar')}" ${doc.storage_path ? '' : 'disabled'}>PDF ↗</button></td></tr>`).join('')}</tbody></table></div>
+    </section>
+    <section class="event-detail-section"><h3>Transportes asignados</h3>${!transportStore.online ? '<p class="muted">Transporte sin actualizar: mostrando la copia disponible.</p>' : ''}
+      ${trips.map(row => {
+        const stops = row.stops.filter(stop => stop.event?.key === group.key);
+        return `<article class="event-detail-transport"><h4>🚚 ${escape(row.truck_type || 'Camión sin asignar')}</h4><dl class="event-detail-info">
+          <dt>Chofer</dt><dd>${escape(row.driver || 'Sin asignar')}</dd><dt>Horario de carga</dt><dd>${escape(L.dateTimeLabel(row.loading_at))}</dd>
+          <dt>Horario de salida</dt><dd>${escape(L.dateTimeLabel(row.departure_at))}</dd><dt>Desde</dt><dd>${escape(row.origin || 'Sin lugar de salida')}</dd>
+          ${stops.map(stop => `<dt>Destino</dt><dd>${escape(stop.destination || 'Sin destino')}</dd><dt>Horario de llegada</dt><dd>${escape(L.dateTimeLabel(stop.eta))}</dd>`).join('')}
+        </dl></article>`;
+      }).join('') || '<p class="muted">No hay camiones asignados a este evento.</p>'}
+    </section>`;
+}
+
+function openEventDetails(key, day) {
+  dialogEvent = { key, day };
+  byId('event-detail-error').hidden = true;
+  renderEventDetails();
+  byId('event-detail-dialog').showModal();
+}
+
+function assignTruckToEvent() {
+  if (!window.AppAccess.isFull() || !dialogEvent) return;
+  const group = L.groupEvents(documents).find(group => group.key === dialogEvent.key);
+  if (!group) return;
+  try {
+    sessionStorage.setItem('cr_logistica_event_prefill_v1', JSON.stringify({
+      event: { key: group.key, order: group.order, name: group.name }, date: dialogEvent.day, destinations: group.places
+    }));
+    location.assign('salidas.html?desdeEvento=1');
+  } catch (error) {
+    byId('event-detail-error').textContent = 'No se pudo preparar la salida. Revisá que el navegador permita guardar datos e intentá de nuevo.';
+    byId('event-detail-error').hidden = false;
+  }
+}
 function hasTransportOnDay(group, day) {
   return transportStore.rows().some(row => row.departure_at.slice(0, 10) === day && L.linkedEvents(row).some(event => event.key === group.key));
 }
@@ -109,8 +159,7 @@ function renderEventCalendar(groups) {
           });
           const transportMarkup = tripDetails.length ? `<span class="calendar-event-transports">${tripDetails.map(fields => `<span class="calendar-transport-badge">${fields.map(([label, value]) => `<span class="calendar-transport-line">${label === 'Camión' ? '<span aria-hidden="true">🚚</span> ' : ''}<strong>${escape(label)}:</strong> ${escape(value)}</span>`).join('')}</span>`).join('')}</span>` : '';
           const fullTitle = title + (tripDetails.length ? ` · Transporte: ${tripDetails.map(fields => fields.map(([label, value]) => `${label}: ${value}`).join(' · ')).join(' / ')}` : '');
-          const assignButton = window.AppAccess.isFull() ? `<button class="event-assign-truck" type="button" data-assign-truck="${escape(group.key)}" aria-label="Asignar camión a ${escape(L.eventLabel(group))}">🚚 Asignar camión</button>` : '';
-          return `<div class="calendar-entry calendar-event event-color-${colors.get(group.key)} ${group.expired ? 'ended' : group.ongoing ? 'ongoing' : 'upcoming'}" role="group" data-event-key="${escape(group.key)}" style="grid-row:${lanes.get(group.key) + 1}" title="${escape(fullTitle)}"><button class="event-card-open" type="button" aria-label="Seleccionar evento ${escape(fullTitle)}"><span class="calendar-event-order">${escape(group.order || 'Sin orden')}</span><span class="calendar-event-name">${escape(group.name || 'Evento sin nombre')}</span><span class="calendar-event-place">${escape(group.places.join(' / ') || 'Sin locación')}</span><span class="calendar-event-phase">${phase}</span><span class="calendar-event-areas">${areas || '<span class="muted">Sin área informada</span>'}</span>${transportMarkup}</button>${assignButton}</div>`;
+          return `<div class="calendar-entry calendar-event event-color-${colors.get(group.key)} ${group.expired ? 'ended' : group.ongoing ? 'ongoing' : 'upcoming'}" role="group" data-event-key="${escape(group.key)}" style="grid-row:${lanes.get(group.key) + 1}" title="${escape(fullTitle)}"><button class="event-card-open" type="button" aria-label="Ver detalle del evento ${escape(fullTitle)}"><span class="calendar-event-order">${escape(group.order || 'Sin orden')}</span><span class="calendar-event-name">${escape(group.name || 'Evento sin nombre')}</span><span class="calendar-event-place">${escape(group.places.join(' / ') || 'Sin locación')}</span><span class="calendar-event-phase">${phase}</span><span class="calendar-event-areas">${areas || '<span class="muted">Sin área informada</span>'}</span>${transportMarkup}</button></div>`;
         }).join('')}</div>
       </div>`;
     }
@@ -167,6 +216,7 @@ function renderEvents() {
       </tbody></table></div>
     </details>`;
   }).join('') || `<div class="empty"><strong>${selectedDay ? 'No hay eventos pendientes de desarme para este día' : 'No hay eventos pendientes de desarme'}</strong></div>`;
+  if (byId('event-detail-dialog').open) renderEventDetails();
   L.icons();
 }
 
@@ -196,28 +246,21 @@ byId('event-calendar-prev').addEventListener('click', () => changeEventMonth(-1)
 byId('event-calendar-next').addEventListener('click', () => changeEventMonth(1));
 byId('event-calendar-today').addEventListener('click', () => selectEventDay(L.today()));
 byId('event-calendar-grid').addEventListener('click', event => {
-  const assign = event.target.closest('[data-assign-truck]');
-  if (assign) {
-    if (!window.AppAccess.isFull()) return;
-    const group = L.groupEvents(documents).find(group => group.key === assign.dataset.assignTruck);
-    if (!group) return;
-    try {
-      sessionStorage.setItem('cr_logistica_event_prefill_v1', JSON.stringify({
-        event: { key: group.key, order: group.order, name: group.name },
-        date: assign.closest('[data-calendar-date]').dataset.calendarDate,
-        destinations: group.places
-      }));
-      location.assign('salidas.html?desdeEvento=1');
-    } catch (error) {
-      byId('status').textContent = 'No se pudo preparar la salida. Revisá que el navegador permita guardar datos e intentá de nuevo.';
-      byId('status').classList.add('error');
-    }
-    return;
-  }
   const cell = event.target.closest('[data-calendar-date]');
   if (!cell) return;
   const entry = event.target.closest('[data-event-key]');
-  selectEventDay(cell.dataset.calendarDate, entry?.dataset.eventKey || '', !entry);
+  if (entry) { openEventDetails(entry.dataset.eventKey, cell.dataset.calendarDate); return; }
+  selectEventDay(cell.dataset.calendarDate, '', true);
+});
+for (const id of ['close-event-detail', 'dismiss-event-detail']) byId(id).addEventListener('click', () => byId('event-detail-dialog').close());
+byId('event-detail-assign-truck').addEventListener('click', assignTruckToEvent);
+byId('event-detail-dialog').addEventListener('click', event => {
+  const link = event.target.closest('[data-pdf-path]');
+  if (link) { event.preventDefault(); window.AppAccess.openPdf(link.dataset.pdfPath); return; }
+  if (event.target === byId('event-detail-dialog')) {
+    const bounds = event.target.getBoundingClientRect();
+    if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) event.target.close();
+  }
 });
 byId('event-calendar-grid').addEventListener('keydown', event => {
   const button = event.target.closest('[data-select-day]');
