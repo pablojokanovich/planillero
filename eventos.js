@@ -32,6 +32,31 @@ function changeEventMonth(offset) {
 }
 
 function renderEventCalendar(groups) {
+  // Assign from all saved events so filtering or selecting a day keeps their colors.
+  const colors = new Map();
+  const lanes = new Map();
+  const laneEnds = [];
+  const assigned = [];
+  for (const group of L.groupEvents(documents)) {
+    let hash = 0;
+    for (const char of group.key) hash = (Math.imul(hash, 31) + char.charCodeAt(0)) >>> 0;
+    const start = group.start || group.end;
+    const end = group.end && group.end >= start ? group.end : start;
+    if (start) {
+      let lane = laneEnds.findIndex(lastDay => lastDay < start);
+      if (lane < 0) lane = laneEnds.length;
+      lanes.set(group.key, lane);
+      laneEnds[lane] = end;
+    }
+    const used = new Set(assigned.filter(other => start && other.start && start <= other.end && end >= other.start).map(other => other.color));
+    let color = hash % 12;
+    for (let offset = 0; offset < 12; offset++) {
+      const candidate = (hash + offset) % 12;
+      if (!used.has(candidate)) { color = candidate; break; }
+    }
+    colors.set(group.key, color);
+    assigned.push({ start, end, color });
+  }
   const month = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(new Date(`${calendarMonth}-01T12:00:00Z`));
   byId('event-calendar-title').textContent = month[0].toUpperCase() + month.slice(1);
   byId('events-selected-date').textContent = selectedDay ? L.dateLabel(selectedDay) : 'Todos los días';
@@ -41,19 +66,24 @@ function renderEventCalendar(groups) {
   const label = new Intl.DateTimeFormat('es-AR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
   let html = '<div class="calendar-week calendar-weekdays" role="row">' + ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map(day => `<div role="columnheader">${day}</div>`).join('') + '</div>';
   for (let week = 0; week < 6; week++) {
-    html += '<div class="calendar-week" role="row">';
-    for (const day of dates.slice(week * 7, week * 7 + 7)) {
+    const weekDays = dates.slice(week * 7, week * 7 + 7);
+    const weekGroups = groups.filter(group => weekDays.some(day => L.eventOnDay(group, day)));
+    const laneCount = Math.max(1, ...weekGroups.map(group => lanes.get(group.key) + 1));
+    html += `<div class="calendar-week event-calendar-week" role="row" style="--event-lanes:${laneCount}">`;
+    for (const [column, day] of weekDays.entries()) {
       const entries = groups.filter(group => L.eventOnDay(group, day));
       const fullLabel = label.format(new Date(`${day}T12:00:00Z`));
-      html += `<div class="calendar-day${day.slice(0, 7) !== calendarMonth ? ' other-month' : ''}${day === selectedDay ? ' is-selected' : ''}${day === today ? ' is-today' : ''}" role="gridcell" aria-selected="${day === selectedDay}" data-calendar-date="${day}">
+      html += `<div class="calendar-day${day.slice(0, 7) !== calendarMonth ? ' other-month' : ''}${day === selectedDay ? ' is-selected' : ''}${day === today ? ' is-today' : ''}" role="gridcell" aria-selected="${day === selectedDay}" data-calendar-date="${day}" style="grid-column:${column + 1}">
+        <div class="event-day-heading">
         <button class="calendar-day-number" type="button" data-select-day="${day}" aria-label="Ver eventos del ${escape(fullLabel)}" ${day === today ? 'aria-current="date"' : ''}>${Number(day.slice(8, 10))}</button>
         ${day === today ? '<span class="calendar-today-label">HOY</span>' : ''}
+        </div>
         <div class="calendar-entries">${entries.map(group => {
           const phase = day === group.start && day === group.end ? 'Armado y desarme' : day === group.start ? 'Armado' : day === group.end ? 'Desarme' : 'En curso';
           const loadedAreas = group.areas.length ? `Planillas cargadas: ${group.areas.join(', ')}` : 'Sin área informada';
           const title = `${group.order || 'Sin orden'} · ${group.name || 'Evento sin nombre'} · ${group.places.join(' / ')} · ${phase} · ${loadedAreas}`;
           const areas = group.areas.map(area => `<span class="calendar-area-check" aria-label="${escape(area)}: planilla cargada">✓ ${escape(area)}</span>`).join('');
-          return `<button class="calendar-entry calendar-event ${group.expired ? 'ended' : group.ongoing ? 'ongoing' : 'upcoming'}" type="button" data-event-key="${escape(group.key)}" title="${escape(title)}" aria-label="Seleccionar evento ${escape(title)}"><span class="calendar-event-order">${escape(group.order || 'Sin orden')}</span><span class="calendar-event-name">${escape(group.name || 'Evento sin nombre')}</span><span class="calendar-event-place">${escape(group.places.join(' / ') || 'Sin locación')}</span><span class="calendar-event-phase">${phase}</span><span class="calendar-event-areas">${areas || '<span class="muted">Sin área informada</span>'}</span></button>`;
+          return `<button class="calendar-entry calendar-event event-color-${colors.get(group.key)} ${group.expired ? 'ended' : group.ongoing ? 'ongoing' : 'upcoming'}" type="button" data-event-key="${escape(group.key)}" style="grid-row:${lanes.get(group.key) + 1}" title="${escape(title)}" aria-label="Seleccionar evento ${escape(title)}"><span class="calendar-event-order">${escape(group.order || 'Sin orden')}</span><span class="calendar-event-name">${escape(group.name || 'Evento sin nombre')}</span><span class="calendar-event-place">${escape(group.places.join(' / ') || 'Sin locación')}</span><span class="calendar-event-phase">${phase}</span><span class="calendar-event-areas">${areas || '<span class="muted">Sin área informada</span>'}</span></button>`;
         }).join('')}</div>
       </div>`;
     }
@@ -93,18 +123,15 @@ function renderEvents() {
   const visible = selectedDay ? pending.filter(group => L.eventOnDay(group, selectedDay)) : pending;
   byId('metrics').innerHTML = `<span><strong>${visible.length}</strong>pendientes de desarme</span><span><strong>${groups.length}</strong>eventos registrados</span><span><strong>${groups.filter(group => !group.start && !group.end).length}</strong>sin fecha</span>`;
   byId('events').innerHTML = visible.map(group => {
-    const state = group.expired ? 'Finalizado' : group.ongoing ? 'En curso' : group.start ? 'Próximo' : 'Sin fecha';
     return `<details class="event" data-key="${escape(group.key)}" ${open.has(group.key) ? 'open' : ''}>
       <summary>
         <div class="order">${escape(group.order || 'Sin nro. de orden')}</div>
-        <div class="event-info"><p class="event-title">${escape(group.name || 'Evento sin nombre')}</p><div class="places muted">${escape(group.places.join(' / ') || 'Sin locación')}</div></div>
-        <div class="event-dates">${escape(L.dateLabel(group.start))}<span>Desarme: ${escape(L.dateLabel(group.end))}</span></div>
-        <div class="event-count"><span class="badge ${group.ongoing ? '' : 'pending'}">${state}</span><span>${group.documents.length} PDF</span>${L.icon('chevron-down', '&#8964;')}</div>
+        <div class="event-info"><p class="event-title">${escape(group.name || 'Evento sin nombre')}</p></div>
+        <span class="event-toggle" aria-hidden="true">${L.icon('chevron-down', '&#8964;')}</span>
       </summary>
-      <div class="table-wrap"><table><thead><tr><th>Área</th><th>Sala</th><th>Lugar</th><th>Responsable</th><th>Archivo</th></tr></thead><tbody>
+      <div class="table-wrap"><table><thead><tr><th>Área</th><th>Sala</th><th>PDF</th></tr></thead><tbody>
       ${group.documents.map(doc => {
-        const url = L.pdfUrl(doc);
-        return `<tr><td>${escape(doc.area || '—')}</td><td>${escape(doc.sala || '—')}</td><td>${escape(doc.lugar || '—')}</td><td>${escape(doc.lider || '—')}</td><td>${url ? `<a href="#" data-pdf-path="${escape(doc.storage_path || '')}">${escape(doc.filename || 'Ver PDF')}</a>` : 'PDF no disponible'}</td></tr>`;
+        return `<tr><td>${escape(doc.area || '—')}</td><td>${escape(doc.sala || '—')}</td><td><button type="button" class="event-pdf-button" data-pdf-path="${escape(doc.storage_path || '')}" aria-label="Abrir PDF de ${escape(doc.area || 'área sin informar')}, ${escape(doc.sala || 'sala sin informar')}" title="${escape(doc.filename || 'Ver PDF')}" ${doc.storage_path ? '' : 'disabled'}>PDF ↗</button></td></tr>`;
       }).join('')}
       </tbody></table></div>
     </details>`;
