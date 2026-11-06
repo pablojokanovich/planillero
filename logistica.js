@@ -86,7 +86,8 @@
         const rollover = validTime(stop.eta) && validTime(previousTime) && stop.eta < previousTime ? 1 : 0;
         currentDay = shiftDate(currentDay, rollover + (stop.extraDays || 0));
         if (validTime(stop.eta)) previousTime = stop.eta;
-        return { destination: stop.destination.trim(), address: (stop.address || '').trim(), eta: combine(currentDay, stop.eta) };
+        return { destination: stop.destination.trim(), address: (stop.address || '').trim(), eta: combine(currentDay, stop.eta),
+          ...(stop.event?.key ? { event: { key: stop.event.key, order: stop.event.order || '', name: stop.event.name || '' } } : {}) };
       })
     };
   }
@@ -123,6 +124,13 @@
     return Boolean(start && day >= start && day <= end);
   }
 
+  function linkedEvents(row) {
+    return [...new Map((row.stops || []).filter(stop => typeof stop.event?.key === 'string' && stop.event.key)
+      .map(stop => [stop.event.key, stop.event])).values()];
+  }
+  function eventLabel(event) {
+    return [event.order ? `OS ${event.order}` : '', event.name || 'Evento sin nombre'].filter(Boolean).join(' · ');
+  }
   function validateDeparture(row) {
     if (!row.origin?.trim()) return 'Completá el lugar de salida.';
     if (!TRUCKS.includes(row.truck_type)) return 'Seleccioná el modelo de camión.';
@@ -258,7 +266,7 @@
       return this.put({ id: `${kind}-${nameKey(name)}`, kind, name, address: kind === 'destination' ? address.trim() : '', deleted: false, updated_at: new Date().toISOString() });
     }
   }
-  const api = { TRUCKS, CATALOG_DEFAULTS, nameKey, snapshot, isoDate, today, dateLabel, dateTimeLabel, escapeHTML, icon, icons, uuid, normalizeOrder, dayDifference, calendarDays, departureSchedule, groupEvents, eventOnDay, validateDeparture, fetchEventDocuments, pdfUrl, DepartureStore, CatalogStore };
+  const api = { TRUCKS, CATALOG_DEFAULTS, nameKey, snapshot, isoDate, today, dateLabel, dateTimeLabel, escapeHTML, icon, icons, uuid, normalizeOrder, dayDifference, calendarDays, departureSchedule, groupEvents, eventOnDay, linkedEvents, eventLabel, validateDeparture, fetchEventDocuments, pdfUrl, DepartureStore, CatalogStore };
   root.Logistics = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

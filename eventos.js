@@ -3,6 +3,7 @@ window.AppAccess.ready.then(() => {
 const L = window.Logistics;
 const byId = id => document.getElementById(id);
 const escape = L.escapeHTML;
+const transportStore = new L.DepartureStore(localStorage);
 let documents = [];
 let loading = false;
 let lastUpdated = '';
@@ -32,6 +33,13 @@ function changeEventMonth(offset) {
 }
 
 function renderEventCalendar(groups) {
+  const transports = new Map();
+  for (const row of transportStore.rows().sort((a, b) => a.departure_at.localeCompare(b.departure_at))) {
+    for (const event of L.linkedEvents(row)) {
+      if (!transports.has(event.key)) transports.set(event.key, []);
+      transports.get(event.key).push(row);
+    }
+  }
   // Assign from all saved events so filtering or selecting a day keeps their colors.
   const colors = new Map();
   const lanes = new Map();
@@ -83,7 +91,11 @@ function renderEventCalendar(groups) {
           const loadedAreas = group.areas.length ? `Planillas cargadas: ${group.areas.join(', ')}` : 'Sin área informada';
           const title = `${group.order || 'Sin orden'} · ${group.name || 'Evento sin nombre'} · ${group.places.join(' / ')} · ${phase} · ${loadedAreas}`;
           const areas = group.areas.map(area => `<span class="calendar-area-check" aria-label="${escape(area)}: planilla cargada">✓ ${escape(area)}</span>`).join('');
-          return `<button class="calendar-entry calendar-event event-color-${colors.get(group.key)} ${group.expired ? 'ended' : group.ongoing ? 'ongoing' : 'upcoming'}" type="button" data-event-key="${escape(group.key)}" style="grid-row:${lanes.get(group.key) + 1}" title="${escape(title)}" aria-label="Seleccionar evento ${escape(title)}"><span class="calendar-event-order">${escape(group.order || 'Sin orden')}</span><span class="calendar-event-name">${escape(group.name || 'Evento sin nombre')}</span><span class="calendar-event-place">${escape(group.places.join(' / ') || 'Sin locación')}</span><span class="calendar-event-phase">${phase}</span><span class="calendar-event-areas">${areas || '<span class="muted">Sin área informada</span>'}</span></button>`;
+          const trips = transports.get(group.key) || [];
+          const tripLabel = row => `${row.truck_type} · ${L.dateLabel(row.departure_at)} ${row.departure_at.slice(11, 16)}`;
+          const transportMarkup = trips.length ? `<span class="calendar-event-transports">${trips.map(row => `<span class="calendar-transport-badge" title="${escape(`Carga: ${L.dateTimeLabel(row.loading_at)} · Salida: ${L.dateTimeLabel(row.departure_at)}`)}">🚚 ${escape(tripLabel(row))}</span>`).join('')}</span>` : '';
+          const fullTitle = title + (trips.length ? ` · Transporte: ${trips.map(tripLabel).join(' / ')}` : '');
+          return `<button class="calendar-entry calendar-event event-color-${colors.get(group.key)} ${group.expired ? 'ended' : group.ongoing ? 'ongoing' : 'upcoming'}" type="button" data-event-key="${escape(group.key)}" style="grid-row:${lanes.get(group.key) + 1}" title="${escape(fullTitle)}" aria-label="Seleccionar evento ${escape(fullTitle)}"><span class="calendar-event-order">${escape(group.order || 'Sin orden')}</span><span class="calendar-event-name">${escape(group.name || 'Evento sin nombre')}</span><span class="calendar-event-place">${escape(group.places.join(' / ') || 'Sin locación')}</span><span class="calendar-event-phase">${phase}</span><span class="calendar-event-areas">${areas || '<span class="muted">Sin área informada</span>'}</span>${transportMarkup}</button>`;
         }).join('')}</div>
       </div>`;
     }
@@ -119,7 +131,10 @@ function renderEvents() {
     return (!from || (end && end >= from)) && (!until || (start && start <= until)) && (!query || text.includes(query));
   });
   renderEventCalendar(groups);
-  const pending = groups.filter(group => !group.expired);
+  const pending = groups.filter(group => !group.expired).sort((a, b) =>
+    (a.end || '9999-12-31').localeCompare(b.end || '9999-12-31') ||
+    (a.start || '9999-12-31').localeCompare(b.start || '9999-12-31') ||
+    a.order.localeCompare(b.order, 'es', { numeric: true }));
   const visible = selectedDay ? pending.filter(group => L.eventOnDay(group, selectedDay)) : pending;
   byId('metrics').innerHTML = `<span><strong>${visible.length}</strong>pendientes de desarme</span><span><strong>${groups.length}</strong>eventos registrados</span><span><strong>${groups.filter(group => !group.start && !group.end).length}</strong>sin fecha</span>`;
   byId('events').innerHTML = visible.map(group => {
@@ -145,12 +160,13 @@ async function refreshEvents() {
   byId('refresh').disabled = true;
   byId('status').textContent = 'Actualizando eventos...';
   try {
-    documents = await L.fetchEventDocuments();
+    [documents] = await Promise.all([L.fetchEventDocuments(), transportStore.refresh()]);
     lastUpdated = new Date().toISOString();
     let cached = true;
     try { localStorage.setItem(cacheKey, JSON.stringify({ documents, updated: lastUpdated })); } catch (error) { cached = false; }
     byId('status').textContent = cached ? 'Agenda sincronizada con las planillas guardadas.' : 'Agenda sincronizada. No se pudo guardar una copia local.';
     byId('status').classList.toggle('error', !cached);
+    if (!transportStore.online) byId('status').textContent += ' No se pudo actualizar el transporte; se muestra la última copia disponible.';
   } catch (error) {
     const date = lastUpdated ? new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', dateStyle: 'short', timeStyle: 'short' }).format(new Date(lastUpdated)) : '';
     byId('status').textContent = date ? `Sin conexión. Mostrando la copia del ${date}.` : 'No se pudo cargar la agenda online. Reintentá con Actualizar.';

@@ -119,6 +119,12 @@ td a { color: #ff969b; }
 .departure-sidebar .empty { padding: 34px 8px; }
 .departure-sidebar .empty strong { font-size: 14px; }
 .departure-calendar { min-width: 0; }
+.departure-calendar .calendar-day { height: 284px; }
+.departure-calendar .calendar-entry { height: 112px; min-height: 112px; }
+.calendar-entry .calendar-entry-linked-event { margin-top: 3px; color: #e5d9b9; font-size: 10px; white-space: normal; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }
+.linked-event-label { color: #e5d9b9; font-size: 11px; overflow-wrap: anywhere; }
+.event-link-help { font-size: 12px; margin: 0 0 8px; }
+.event-link-help + .status:empty { display: none; }
 .calendar-heading { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 65px; padding: 10px 0; }
 .calendar-heading h2 { font-size: 21px; }
 .calendar-heading .actions { flex-wrap: nowrap; gap: 6px; }
@@ -189,6 +195,8 @@ td a { color: #ff969b; }
 .events-calendar .calendar-event:hover { filter: brightness(1.12); }
 .events-calendar .calendar-event:focus-visible { outline: 2px solid var(--event-accent, #fff); outline-offset: 1px; }
 .calendar-entry .calendar-event-areas { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; overflow: visible; white-space: normal; }
+.calendar-entry .calendar-event-transports { display: grid; gap: 3px; margin-top: 4px; overflow: visible; white-space: normal; }
+.calendar-entry .calendar-transport-badge { border-top: 1px solid #ffffff35; padding-top: 3px; color: #f1e2bd; font-size: 10px; line-height: 14px; white-space: normal; overflow-wrap: anywhere; }
 .calendar-entry .calendar-area-check { padding: 1px 4px; border: 1px solid #5a9d78; border-radius: 3px; background: #183b2b; color: #baf2cf; font-size: 10px; line-height: 15px; }
 .calendar-area-legend { margin: 0 0 12px; color: #baf2cf; font-size: 12px; }
 .calendar-event-name { white-space: normal !important; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow-wrap: anywhere; }

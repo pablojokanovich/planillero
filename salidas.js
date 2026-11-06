@@ -12,6 +12,31 @@ let refreshing = false;
 let viewError = '';
 let selectedDay = L.today();
 let calendarMonth = selectedDay.slice(0, 7);
+let eventGroups = [];
+const eventOptionsCache = 'cr_logistica_eventos_v1';
+try {
+  const cached = JSON.parse(localStorage.getItem(eventOptionsCache));
+  if (Array.isArray(cached)) eventGroups = cached;
+} catch (error) {}
+
+function eventOptions(stop) {
+  const current = stop.event;
+  const options = eventGroups.filter(group => !group.expired || group.key === current?.key);
+  if (current?.key && !options.some(group => group.key === current.key)) options.push(current);
+  return '<option value="">Sin evento vinculado</option>' + options.map(group =>
+    `<option value="${escape(group.key)}" ${group.key === current?.key ? 'selected' : ''}>${escape(L.eventLabel(group))}${group.start ? ` · ${escape(L.dateLabel(group.start))}` : ''}</option>`).join('');
+}
+
+async function refreshEventOptions() {
+  try {
+    eventGroups = L.groupEvents(await L.fetchEventDocuments()).map(({ key, order, name, start, end, expired }) => ({ key, order, name, start, end, expired }));
+    try { localStorage.setItem(eventOptionsCache, JSON.stringify(eventGroups)); } catch (error) {}
+    byId('event-options-status').textContent = eventGroups.some(group => !group.expired) ? '' : 'No hay eventos pendientes. Primero generá una planilla para que aparezca acá.';
+  } catch (error) {
+    byId('event-options-status').textContent = eventGroups.length ? 'Sin conexión: usando la última lista de eventos guardada.' : 'No se pudieron cargar los eventos. Cerrá y usá Actualizar salidas para reintentar.';
+  }
+  if (draft && byId('departure-dialog').open) renderStops();
+}
 
 function selectCalendarDay(day, focus = false) {
   selectedDay = day;
@@ -52,8 +77,9 @@ function renderCalendar(rows) {
           const type = ({ Sprinter: 'sprinter', Iveco: 'iveco', 'Mercedes Benz': 'mercedes' })[row.truck_type] || '';
           const loading = row.loading_at.slice(0, 10) === day ? row.loading_at.slice(11, 16) : L.dateTimeLabel(row.loading_at);
           const destinations = row.stops.map(stop => stop.destination).join(' → ');
-          const title = `Carga: ${loading} · Salida: ${row.departure_at.slice(11, 16)} · Camión: ${row.truck_type} · Destino: ${destinations}`;
-          return `<button class="calendar-entry ${type}" type="button" data-departure-id="${escape(row.id)}" title="${escape(title)}" aria-label="Editar salida ${escape(title)}"><span class="calendar-entry-loading">Carga: ${escape(loading)}</span><span class="calendar-entry-time">Salida: ${escape(row.departure_at.slice(11, 16))}</span><span class="calendar-entry-truck">${escape(row.truck_type)}</span><span class="calendar-entry-destination">${escape(destinations)}</span></button>`;
+          const events = L.linkedEvents(row).map(L.eventLabel).join(' / ');
+          const title = `Carga: ${loading} · Salida: ${row.departure_at.slice(11, 16)} · Camión: ${row.truck_type} · Destino: ${destinations}${events ? ` · Evento: ${events}` : ''}`;
+          return `<button class="calendar-entry ${type}" type="button" data-departure-id="${escape(row.id)}" title="${escape(title)}" aria-label="Editar salida ${escape(title)}"><span class="calendar-entry-loading">Carga: ${escape(loading)}</span><span class="calendar-entry-time">Salida: ${escape(row.departure_at.slice(11, 16))}</span><span class="calendar-entry-truck">${escape(row.truck_type)}</span><span class="calendar-entry-destination">${escape(destinations)}</span>${events ? `<span class="calendar-entry-linked-event">${escape(events)}</span>` : ''}</button>`;
         }).join('')}</div>
         ${departures.length > 2 ? `<button class="calendar-more" type="button" data-select-day="${day}">+${departures.length - 2} más</button>` : ''}
       </div>`;
@@ -132,7 +158,7 @@ function renderDepartures() {
   }
   const rows = store.rows().filter(row => {
     const date = row.departure_at.slice(0, 10);
-    const text = [row.origin, row.driver, row.truck_type, row.notes, ...row.stops.map(stop => `${stop.destination} ${stop.address || ''}`)].join(' ').toLocaleLowerCase('es');
+    const text = [row.origin, row.driver, row.truck_type, row.notes, ...L.linkedEvents(row).map(L.eventLabel), ...row.stops.map(stop => `${stop.destination} ${stop.address || ''}`)].join(' ').toLocaleLowerCase('es');
     return (!from || date >= from) && (!until || date <= until) && (!truck || row.truck_type === truck) && (!query || text.includes(query));
   }).sort((a, b) => a.departure_at.localeCompare(b.departure_at) || a.id.localeCompare(b.id));
   renderCalendar(rows);
@@ -144,7 +170,7 @@ function renderDepartures() {
       <div><div class="departure-time">${escape(row.departure_at.slice(11, 16))}</div><div class="muted">Salida</div></div>
       <div><p class="truck-name">${escape(row.truck_type)}</p><p>${escape(row.driver)}</p><p class="muted">Carga: ${escape(L.dateTimeLabel(row.loading_at))}</p></div>
       <div class="departure-route"><p><span class="muted">Desde </span>${escape(row.origin)}</p>
-        <ol class="route">${row.stops.map((stop, index) => `<li><span class="stop-number">${index + 1}.</span><div>${escape(stop.destination)}${stop.address ? `<div class="muted">${escape(stop.address)}</div>` : ''}</div><time>${escape(stop.eta.slice(0, 10) === day ? stop.eta.slice(11, 16) : L.dateTimeLabel(stop.eta))}</time></li>`).join('')}</ol>
+        <ol class="route">${row.stops.map((stop, index) => `<li><span class="stop-number">${index + 1}.</span><div>${escape(stop.destination)}${stop.address ? `<div class="muted">${escape(stop.address)}</div>` : ''}${stop.event?.key ? `<div class="linked-event-label">${escape(L.eventLabel(stop.event))}</div>` : ''}</div><time>${escape(stop.eta.slice(0, 10) === day ? stop.eta.slice(11, 16) : L.dateTimeLabel(stop.eta))}</time></li>`).join('')}</ol>
         ${row.notes ? `<p class="muted">${escape(row.notes)}</p>` : ''}
       </div>
       <div class="actions"><button class="icon-button" data-action="edit" title="Editar salida" aria-label="Editar salida">${L.icon('pencil', '&#9998;')}</button><button class="icon-button danger" data-action="delete" title="Eliminar salida" aria-label="Eliminar salida">${L.icon('trash-2', '&times;')}</button></div>
@@ -190,6 +216,7 @@ function renderStops(focusLast = false) {
         <option value="__manual__" ${manual ? 'selected' : ''}>Otro destino...</option>
       </select></label>
       <label>Hora de llegada<input data-field="eta" aria-label="Hora de llegada ${index + 1}" type="time" value="${escape(stop.eta)}" required><span class="schedule-day" data-stop-day hidden></span></label>
+      <label class="full">Evento vinculado (opcional)<select data-role="event-choice" aria-label="Evento ${index + 1}">${eventOptions(stop)}</select></label>
       <label class="full" ${manual ? '' : 'hidden'}>Nombre del destino<input data-field="destination" aria-label="Nombre del destino ${index + 1}" value="${escape(stop.destination)}" ${manual ? 'required' : 'disabled'} maxlength="250"></label>
       <label class="full">Dirección<input data-field="address" aria-label="Dirección ${index + 1}" value="${escape(stop.address || '')}" maxlength="350"></label>
     </div>
@@ -238,7 +265,7 @@ async function refreshDepartures() {
   if (refreshing || saving) return;
   refreshing = true;
   byId('refresh').disabled = true;
-  try { await Promise.all([store.refresh(), window.AppAccess.isCalendar() ? Promise.resolve() : catalog.refresh()]); if (store.online && window.AppAccess.isFull()) window.DepartureAlerts.observe(store.rows()); }
+  try { await Promise.all([store.refresh(), window.AppAccess.isCalendar() ? Promise.resolve() : catalog.refresh(), window.AppAccess.isCalendar() ? Promise.resolve() : refreshEventOptions()]); if (store.online && window.AppAccess.isFull()) window.DepartureAlerts.observe(store.rows()); }
   finally { refreshing = false; byId('refresh').disabled = false; showStatus(); renderDepartures(); if (byId('settings-dialog').open) renderSettings(); }
 }
 
@@ -283,6 +310,13 @@ byId('stop-editors').addEventListener('input', event => {
   updateScheduleDays();
 });
 byId('stop-editors').addEventListener('change', event => {
+  if (event.target.dataset.role === 'event-choice') {
+    const stop = draft.stops[Number(event.target.closest('.stop-editor').dataset.index)];
+    const group = eventGroups.find(group => group.key === event.target.value);
+    if (group) stop.event = { key: group.key, order: group.order, name: group.name };
+    else if (!event.target.value) delete stop.event;
+    return;
+  }
   if (event.target.dataset.role !== 'destination-choice') return;
   const index = Number(event.target.closest('.stop-editor').dataset.index);
   const stop = draft.stops[index];
