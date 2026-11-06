@@ -109,7 +109,8 @@ function renderEventCalendar(groups) {
           });
           const transportMarkup = tripDetails.length ? `<span class="calendar-event-transports">${tripDetails.map(fields => `<span class="calendar-transport-badge">${fields.map(([label, value]) => `<span class="calendar-transport-line">${label === 'Camión' ? '<span aria-hidden="true">🚚</span> ' : ''}<strong>${escape(label)}:</strong> ${escape(value)}</span>`).join('')}</span>`).join('')}</span>` : '';
           const fullTitle = title + (tripDetails.length ? ` · Transporte: ${tripDetails.map(fields => fields.map(([label, value]) => `${label}: ${value}`).join(' · ')).join(' / ')}` : '');
-          return `<button class="calendar-entry calendar-event event-color-${colors.get(group.key)} ${group.expired ? 'ended' : group.ongoing ? 'ongoing' : 'upcoming'}" type="button" data-event-key="${escape(group.key)}" style="grid-row:${lanes.get(group.key) + 1}" title="${escape(fullTitle)}" aria-label="Seleccionar evento ${escape(fullTitle)}"><span class="calendar-event-order">${escape(group.order || 'Sin orden')}</span><span class="calendar-event-name">${escape(group.name || 'Evento sin nombre')}</span><span class="calendar-event-place">${escape(group.places.join(' / ') || 'Sin locación')}</span><span class="calendar-event-phase">${phase}</span><span class="calendar-event-areas">${areas || '<span class="muted">Sin área informada</span>'}</span>${transportMarkup}</button>`;
+          const assignButton = window.AppAccess.isFull() ? `<button class="event-assign-truck" type="button" data-assign-truck="${escape(group.key)}" aria-label="Asignar camión a ${escape(L.eventLabel(group))}">🚚 Asignar camión</button>` : '';
+          return `<div class="calendar-entry calendar-event event-color-${colors.get(group.key)} ${group.expired ? 'ended' : group.ongoing ? 'ongoing' : 'upcoming'}" role="group" data-event-key="${escape(group.key)}" style="grid-row:${lanes.get(group.key) + 1}" title="${escape(fullTitle)}"><button class="event-card-open" type="button" aria-label="Seleccionar evento ${escape(fullTitle)}"><span class="calendar-event-order">${escape(group.order || 'Sin orden')}</span><span class="calendar-event-name">${escape(group.name || 'Evento sin nombre')}</span><span class="calendar-event-place">${escape(group.places.join(' / ') || 'Sin locación')}</span><span class="calendar-event-phase">${phase}</span><span class="calendar-event-areas">${areas || '<span class="muted">Sin área informada</span>'}</span>${transportMarkup}</button>${assignButton}</div>`;
         }).join('')}</div>
       </div>`;
     }
@@ -195,6 +196,24 @@ byId('event-calendar-prev').addEventListener('click', () => changeEventMonth(-1)
 byId('event-calendar-next').addEventListener('click', () => changeEventMonth(1));
 byId('event-calendar-today').addEventListener('click', () => selectEventDay(L.today()));
 byId('event-calendar-grid').addEventListener('click', event => {
+  const assign = event.target.closest('[data-assign-truck]');
+  if (assign) {
+    if (!window.AppAccess.isFull()) return;
+    const group = L.groupEvents(documents).find(group => group.key === assign.dataset.assignTruck);
+    if (!group) return;
+    try {
+      sessionStorage.setItem('cr_logistica_event_prefill_v1', JSON.stringify({
+        event: { key: group.key, order: group.order, name: group.name },
+        date: assign.closest('[data-calendar-date]').dataset.calendarDate,
+        destinations: group.places
+      }));
+      location.assign('salidas.html?desdeEvento=1');
+    } catch (error) {
+      byId('status').textContent = 'No se pudo preparar la salida. Revisá que el navegador permita guardar datos e intentá de nuevo.';
+      byId('status').classList.add('error');
+    }
+    return;
+  }
   const cell = event.target.closest('[data-calendar-date]');
   if (!cell) return;
   const entry = event.target.closest('[data-event-key]');

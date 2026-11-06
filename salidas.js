@@ -233,6 +233,7 @@ function renderStops(focusLast = false) {
 }
 
 function openDeparture(row) {
+  byId('event-prefill-notice').hidden = true;
   draft = row ? JSON.parse(JSON.stringify(row)) : { id: L.uuid(), loading_at: '', departure_at: '', origin: '', truck_type: L.TRUCKS[0], driver: '', notes: '', stops: [{ destination: '', address: '', eta: '' }], deleted: false };
   draft.loading_at = draft.loading_at.slice(0, 16);
   draft.departure_at = draft.departure_at.slice(0, 16);
@@ -402,5 +403,26 @@ setInterval(() => { if (!document.hidden || window.DepartureAlerts.enabled()) re
 L.icons();
 renderDepartures();
 showStatus();
+if (new URLSearchParams(location.search).get('desdeEvento') === '1' && window.AppAccess.isFull()) {
+  try {
+    const prefill = JSON.parse(sessionStorage.getItem('cr_logistica_event_prefill_v1'));
+    sessionStorage.removeItem('cr_logistica_event_prefill_v1');
+    if (prefill && L.isoDate(prefill.date) && typeof prefill.event?.key === 'string' && prefill.event.key) {
+      selectedDay = prefill.date;
+      calendarMonth = selectedDay.slice(0, 7);
+      renderDepartures();
+      openDeparture();
+      const destinations = Array.isArray(prefill.destinations) ? prefill.destinations.filter(value => typeof value === 'string' && value.trim()) : [];
+      draft.stops = (destinations.length ? destinations : ['']).map(destination => ({ destination, address: '', eta: '', extraDays: 0,
+        event: { key: prefill.event.key, order: String(prefill.event.order || ''), name: String(prefill.event.name || '') } }));
+      renderStops();
+      byId('event-prefill-notice').textContent = `Evento vinculado: ${L.eventLabel(prefill.event)}. Revisá los destinos y completá horarios, camión y chofer.`;
+      byId('event-prefill-notice').hidden = false;
+    }
+  } catch (error) {
+    viewError = 'No se pudo recuperar el evento. Podés crear una nueva salida y elegirlo en Destinos.';
+    showStatus();
+  }
+}
 refreshDepartures();
 }).catch(() => {});

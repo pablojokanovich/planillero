@@ -194,6 +194,9 @@ td a { color: #ff969b; }
 .events-calendar .calendar-event { height: auto; min-height: 80px; overflow: visible; padding-bottom: 6px; background: var(--event-bg, #303030); border-left: 4px solid var(--event-accent, #aaa); color: #f7f7f7; }
 .events-calendar .calendar-event:hover { filter: brightness(1.12); }
 .events-calendar .calendar-event:focus-visible { outline: 2px solid var(--event-accent, #fff); outline-offset: 1px; }
+.events-calendar .event-card-open { display: flex; flex-direction: column; align-items: stretch; justify-content: flex-start; flex: 1; gap: 0; width: 100%; min-height: 0; padding: 0; border: 0; border-radius: 0; background: transparent; color: inherit; font: inherit; text-align: left; }
+.events-calendar .event-assign-truck { width: 100%; min-height: 30px; margin-top: 6px; padding: 4px; border-color: var(--event-accent, #aaa); background: #00000030; color: #f7f7f7; font-size: 10px; line-height: 14px; white-space: normal; }
+.events-calendar .event-assign-truck:hover { background: #00000060; }
 .calendar-entry .calendar-event-areas { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; overflow: visible; white-space: normal; }
 .calendar-entry .calendar-event-transports { display: grid; gap: 3px; margin-top: 4px; overflow: visible; white-space: normal; }
 .calendar-entry .calendar-transport-badge { border-top: 1px solid #ffffff35; padding-top: 3px; color: #f1e2bd; font-size: 10px; line-height: 14px; white-space: normal; overflow-wrap: anywhere; }
