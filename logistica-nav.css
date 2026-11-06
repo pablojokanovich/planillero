@@ -1,0 +1,17 @@
+.site-header { height: auto; min-height: 64px; flex-wrap: wrap; padding-top: 10px; padding-bottom: 10px; }
+.header-actions { min-width: 0; flex-wrap: wrap; }
+.main-nav { display: flex; align-items: center; max-width: 100%; flex-wrap: wrap; gap: 6px; padding: 0; border: none; background: transparent; box-shadow: none; }
+.main-nav a { display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 9px 11px; background: #202020; border: 1px solid #3a3a3a; color: #eee; font: 600 11px Arial, sans-serif; letter-spacing: 0; text-transform: uppercase; text-decoration: none; white-space: nowrap; }
+.main-nav a:hover { background: #303030; border-color: #777; }
+.main-nav a:focus-visible { outline: 2px solid #ff5158; outline-offset: 2px; }
+.main-nav a.active { background: #e8000a; border-color: #ff4148; color: white; }
+.deposit-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; position: static; }
+.deposit-page .progress-wrap { top: 0; }
+@media (max-width: 1320px) {
+  .header-actions { width: 100%; }
+  .main-nav { width: 100%; }
+  .header-right { display: none; }
+}
+@media (max-width: 720px) {
+  .main-nav a { flex: 1 1 auto; }
+}

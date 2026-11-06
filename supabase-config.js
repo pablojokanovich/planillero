@@ -1,4 +1,6 @@
 window.PDF_ARCHIVE_CONFIG = Object.freeze({
+  APP_ACCESS_ENABLED: false,
+  SHOW_TRUCK_DEPARTURES: false,
   SUPABASE_URL: 'https://przjcdgxxownkioavqgk.supabase.co',
   SUPABASE_KEY: 'sb_publishable_9GCGVYBXuaXDpHMVfKhW0Q_WXyTdE6e',
   SUPABASE_BUCKET: 'planillas',
@@ -10,4 +12,6 @@ window.PDF_ARCHIVE_CONFIG = Object.freeze({
   FREELANCERS_TABLE: 'freelancers',
   DEPOSIT_CHECKLISTS_TABLE: 'deposit_checklists',
   DEPOSIT_CHECKLIST_ITEMS_TABLE: 'deposit_checklist_items',
+  LOGISTICS_DEPARTURES_TABLE: 'logistics_departures',
+  LOGISTICS_CATALOG_TABLE: 'logistics_catalog',
 });

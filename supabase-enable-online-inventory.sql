@@ -6,7 +6,7 @@ create extension if not exists pgcrypto;
 
 create table if not exists public.inventory_categories (
   id uuid primary key default gen_random_uuid(),
-  area text not null check (area in ('cctv', 'sonido', 'video', 'luces')),
+  area text not null check (area in ('cctv', 'sonido', 'video', 'luces', 'tarimas')),
   name text not null check (length(trim(name)) > 0),
   sort_order integer not null default 0,
   created_at timestamptz not null default now(),
@@ -24,7 +24,7 @@ create table if not exists public.inventory_items (
 
 alter table public.inventory_categories drop constraint if exists inventory_categories_area_check;
 alter table public.inventory_categories add constraint inventory_categories_area_check
-check (area in ('cctv', 'sonido', 'video', 'luces'));
+check (area in ('cctv', 'sonido', 'video', 'luces', 'tarimas'));
 
 create index if not exists inventory_categories_order_idx on public.inventory_categories (area, sort_order);
 create index if not exists inventory_items_category_order_idx on public.inventory_items (category_id, sort_order);

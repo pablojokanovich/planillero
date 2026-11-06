@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <title>Acceso | Congress Rental</title>
+  <link rel="stylesheet" href="inicio.css">
+  <link rel="stylesheet" href="acceso.css">
+  <link rel="stylesheet" href="login.css">
+  <script src="supabase-config.js"></script>
+  <script src="acceso.js"></script>
+  <script src="login.js" defer></script>
+</head>
+<body>
+  <header class="home-header"><span class="home-mark">CR</span><span>CONGRESS RENTAL</span></header>
+  <main class="login-main">
+    <h1>Entrar a la app</h1>
+    <form id="login-form">
+      <fieldset class="login-modes"><legend>Tipo de acceso</legend><label><input type="radio" name="access-kind" value="full" checked>Administrador</label><label><input type="radio" name="access-kind" value="calendar">Consultar calendarios y planillas</label></fieldset>
+      <label class="login-field">Contraseña<div class="password-field"><input id="access-password" type="password" autocomplete="current-password" required><button type="button" id="toggle-password" aria-pressed="false">Mostrar</button></div></label>
+      <button class="login-submit" id="login-submit" type="submit">Entrar</button>
+      <p id="login-error" role="alert" hidden></p>
+    </form>
+  </main>
+</body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="es" data-access-pending="true">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Eventos | Congress Rental</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="logistica.css">
+  <link rel="stylesheet" href="logistica-nav.css">
+  <link rel="stylesheet" href="acceso.css">
+  <script src="supabase-config.js" defer></script>
+  <script src="acceso.js" defer></script>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" async onload="window.Logistics?.icons()"></script>
+  <script src="logistica.js" defer></script>
+  <script src="eventos.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html"><span class="brand-mark">CR</span><span>CONGRESS RENTAL<small>PLANILLAS Y LOGÍSTICA</small></span></a>
+    <nav class="main-nav" aria-label="Navegación principal">
+      <a href="index.html">Inicio</a>
+      <a href="planillero.html">Generar planilla</a>
+      <a href="archivo.html">Planillas Hechas</a>
+      <a href="citaciones.html">Citaciones freelancers</a>
+      <a href="salidas.html">Salida de camiones</a>
+      <a class="active" href="eventos.html">Eventos cargados</a>
+      <a href="planillero.html?remito=manual">Remitos</a>
+    </nav>
+  </header>
+  <main>
+    <div class="page-heading"><h1>Eventos cargados</h1><div class="heading-actions"><button class="icon-button" id="refresh" title="Actualizar eventos" aria-label="Actualizar eventos"><i data-lucide="refresh-cw" aria-hidden="true">&#8635;</i></button><a class="button" data-access="full" href="planillero.html"><i data-lucide="plus" aria-hidden="true">+</i>Nueva planilla</a></div></div>
+    <section class="toolbar" aria-label="Filtros de eventos">
+      <label class="search">Buscar<input type="search" id="search" placeholder="Número de orden, evento o lugar" autocomplete="off"></label>
+      <label>Desde<input type="date" id="date-from"></label>
+      <label>Hasta<input type="date" id="date-to"></label>
+    </section>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <div class="metrics" id="metrics"></div>
+    <div class="events-workspace">
+      <section class="event-sidebar" aria-labelledby="events-list-title">
+        <div class="events-list-heading"><div><h2 id="events-list-title">Pendientes de desarme</h2><p id="events-selected-date">Todos los días</p></div><button id="event-all-days" type="button" hidden>Ver todos</button></div>
+        <div id="events"></div>
+      </section>
+      <section class="events-calendar" aria-labelledby="event-calendar-title">
+        <div class="calendar-heading">
+          <h2 id="event-calendar-title" aria-live="polite"></h2>
+          <div class="actions"><button id="event-calendar-today" type="button">Hoy</button><button class="icon-button" id="event-calendar-prev" type="button" title="Mes anterior" aria-label="Mes anterior"><i data-lucide="chevron-left" aria-hidden="true">&#8249;</i></button><button class="icon-button" id="event-calendar-next" type="button" title="Mes siguiente" aria-label="Mes siguiente"><i data-lucide="chevron-right" aria-hidden="true">&#8250;</i></button></div>
+        </div>
+        <p class="calendar-area-legend">✓ Área con planilla cargada</p>
+        <div class="calendar-scroll"><div id="event-calendar-grid" class="calendar-grid" role="grid" aria-labelledby="event-calendar-title"></div></div>
+      </section>
+    </div>
+  </main>
+</body>
+</html>

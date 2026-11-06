@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es" data-access-pending="true">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Salida de camiones | Congress Rental</title>
+  <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="logistica.css">
+  <link rel="stylesheet" href="logistica-nav.css">
+  <link rel="stylesheet" href="acceso.css">
+  <script src="supabase-config.js" defer></script>
+  <script src="acceso.js" defer></script>
+  <script src="https://unpkg.com/lucide@0.468.0/dist/umd/lucide.min.js" async onload="window.Logistics?.icons()"></script>
+  <script src="logistica.js" defer></script>
+  <script src="avisos-salidas.js" defer></script>
+  <script src="salidas.js" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html"><span class="brand-mark">CR</span><span>CONGRESS RENTAL<small>PLANILLAS Y LOGÍSTICA</small></span></a>
+    <nav class="main-nav" aria-label="Navegación principal">
+      <a href="index.html">Inicio</a>
+      <a href="planillero.html">Generar planilla</a>
+      <a href="archivo.html">Planillas Hechas</a>
+      <a href="citaciones.html">Citaciones freelancers</a>
+      <a class="active" href="salidas.html">Salida de camiones</a>
+      <a href="eventos.html">Eventos cargados</a>
+      <a href="planillero.html?remito=manual">Remitos</a>
+    </nav>
+  </header>
+  <main>
+    <div class="page-heading">
+      <h1>Salida de camiones</h1>
+      <div class="heading-actions">
+        <button id="open-settings" data-access="full" type="button"><i data-lucide="settings" aria-hidden="true">&#9881;</i>Configuración</button>
+        <button class="icon-button" id="refresh" title="Actualizar salidas" aria-label="Actualizar salidas"><i data-lucide="refresh-cw" aria-hidden="true">&#8635;</i></button>
+        <button class="icon-button" id="print" data-access="full" title="Imprimir salidas" aria-label="Imprimir salidas"><i data-lucide="printer" aria-hidden="true">&#9113;</i></button>
+        <button class="primary" id="new-departure" data-access="full"><i data-lucide="plus" aria-hidden="true">+</i>Nueva salida</button>
+      </div>
+    </div>
+    <details class="departure-filters"><summary id="filters-title">Filtros</summary>
+    <section class="toolbar" aria-label="Filtros de salidas">
+      <label>Desde<input id="date-from" type="date"></label>
+      <label>Hasta<input id="date-to" type="date"></label>
+      <label>Camión<select id="truck-filter" aria-label="Camión"><option value="">Todos los modelos</option><option>Sprinter</option><option>Iveco</option><option>Mercedes Benz</option></select></label>
+      <label class="search">Buscar<input id="search" type="search" placeholder="Chofer, origen o destino" autocomplete="off"></label>
+    </section>
+    </details>
+    <p class="status" id="status" role="status" aria-live="polite"></p>
+    <div class="new-departure-alert" id="new-departure-alert" role="status" hidden><span id="new-departure-text"></span><button id="view-new-departure" type="button">Ver salida</button><button class="icon-button" id="dismiss-new-departure" type="button" title="Cerrar aviso" aria-label="Cerrar aviso">&times;</button></div>
+    <div class="metrics" id="metrics"></div>
+    <div class="departures-workspace">
+      <section class="departure-sidebar" aria-labelledby="day-list-title">
+        <div class="day-list-heading"><h2 id="day-list-title">Salidas del día</h2><p id="selected-date-label"></p></div>
+        <div id="departures"></div>
+      </section>
+      <section class="departure-calendar" aria-labelledby="calendar-title">
+        <div class="calendar-heading">
+          <h2 id="calendar-title" aria-live="polite"></h2>
+          <div class="actions">
+            <button id="calendar-today" type="button">Hoy</button>
+            <button class="icon-button" id="calendar-prev" type="button" title="Mes anterior" aria-label="Mes anterior"><i data-lucide="chevron-left" aria-hidden="true">&#8249;</i></button>
+            <button class="icon-button" id="calendar-next" type="button" title="Mes siguiente" aria-label="Mes siguiente"><i data-lucide="chevron-right" aria-hidden="true">&#8250;</i></button>
+          </div>
+        </div>
+        <div class="calendar-scroll"><div id="calendar-grid" class="calendar-grid" role="grid" aria-labelledby="calendar-title"></div></div>
+      </section>
+    </div>
+  </main>
+  <dialog id="departure-dialog" aria-labelledby="dialog-title">
+    <div class="dialog-heading"><h2 id="dialog-title">Nueva salida</h2><button class="icon-button" id="close-dialog" type="button" title="Cerrar" aria-label="Cerrar"><i data-lucide="x" aria-hidden="true">&times;</i></button></div>
+    <form id="departure-form">
+      <div class="form-body">
+        <div class="form-grid">
+          <label class="full">Fecha de salida<input id="trip-date" type="date" required></label>
+          <label>Hora de carga<input id="loading-at" type="time" required><span class="schedule-day" id="loading-day" hidden></span></label>
+          <label>Hora de salida<input id="departure-at" type="time" required></label>
+          <label>Modelo de camión<select id="truck-type" aria-label="Modelo de camión" required><option>Sprinter</option><option>Iveco</option><option>Mercedes Benz</option></select></label>
+          <label>Chofer<select id="driver" aria-label="Chofer" required></select></label>
+          <label class="full">Lugar de salida<select id="origin" aria-label="Lugar de salida" required></select></label>
+          <label class="full" id="origin-manual-field" hidden>Otro lugar de salida<input id="origin-manual" type="text" maxlength="250" autocomplete="off" disabled></label>
+        </div>
+        <div class="route-heading"><h3>Destinos</h3></div>
+        <div id="stop-editors"></div>
+        <button id="add-stop" type="button"><i data-lucide="plus" aria-hidden="true">+</i>Agregar destino</button>
+        <details id="notes-section" class="optional-notes"><summary>Observaciones</summary><label>Observaciones del viaje<textarea id="notes" rows="2" maxlength="2000"></textarea></label></details>
+        <p class="form-error" id="form-error" role="alert" hidden></p>
+      </div>
+      <div class="dialog-footer"><button id="cancel" type="button">Cancelar</button><button class="primary" id="save" type="submit"><i data-lucide="save" aria-hidden="true">&#10003;</i>Guardar salida</button></div>
+    </form>
+  </dialog>
+  <dialog id="settings-dialog" aria-labelledby="settings-title">
+    <div class="dialog-heading"><h2 id="settings-title">Configuración de logística</h2><button class="icon-button" id="close-settings" type="button" title="Cerrar configuración" aria-label="Cerrar configuración"><i data-lucide="x" aria-hidden="true">&times;</i></button></div>
+    <div class="form-body">
+      <p class="status" id="settings-status" role="status" aria-live="polite"></p>
+      <section class="settings-section" aria-labelledby="notifications-title">
+        <h3 id="notifications-title">Avisos de nuevas salidas</h3>
+        <label class="notification-toggle"><input type="checkbox" id="desktop-alerts">Notificar en esta computadora</label>
+        <p class="status" id="desktop-alerts-status" role="status"></p>
+      </section>
+      <section class="settings-section" aria-labelledby="emails-title">
+        <h3 id="emails-title">Avisos por correo</h3>
+        <p class="muted">Remitente de prueba: pjokanovich@congressrental.com</p>
+        <p class="status" id="email-status" role="status" aria-live="polite"></p>
+        <div id="email-settings" hidden>
+          <ul class="settings-list" id="email-recipients"></ul>
+          <form id="add-email-form" class="settings-add"><label>Correo que recibirá los avisos<input id="new-notification-email" type="email" required maxlength="254" autocomplete="email"></label><button class="primary" type="submit">Agregar correo</button></form>
+        </div>
+      </section>
+      <section class="settings-section" aria-labelledby="drivers-title">
+        <h3 id="drivers-title">Choferes</h3>
+        <ul id="settings-drivers" class="settings-list"></ul>
+        <form id="add-driver-form" class="settings-add">
+          <label>Nombre del nuevo chofer<input id="new-driver-name" required maxlength="150" autocomplete="off"></label>
+          <button class="primary" type="submit"><i data-lucide="plus" aria-hidden="true">+</i>Agregar chofer</button>
+        </form>
+      </section>
+      <section class="settings-section" aria-labelledby="destinations-title">
+        <h3 id="destinations-title">Destinos habituales</h3>
+        <ul id="settings-destinations" class="settings-list"></ul>
+        <form id="add-destination-form" class="form-grid">
+          <label>Nombre del nuevo destino<input id="new-destination-name" required maxlength="250" autocomplete="off"></label>
+          <label>Dirección (opcional)<input id="new-destination-address" maxlength="350" autocomplete="off"></label>
+          <div class="full"><button class="primary" type="submit"><i data-lucide="plus" aria-hidden="true">+</i>Agregar destino habitual</button></div>
+        </form>
+      </section>
+    </div>
+  </dialog>
+</body>
+</html>

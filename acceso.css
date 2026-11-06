@@ -1,0 +1,15 @@
+html[data-access-pending="true"] body { visibility: hidden; }
+[hidden] { display: none !important; }
+html[data-trucks-hidden="true"] a[href="salidas.html"] { display: none !important; }
+#app-logout { min-height: 38px; padding: 8px 14px; background: #202020; color: #fff; border: 1px solid #777; cursor: pointer; font: 600 12px Arial, sans-serif; }
+html[data-access-role="calendar"] .departure-sidebar,
+html[data-access-role="calendar"] .event-sidebar,
+html[data-access-role="calendar"] .metrics,
+html[data-access-role="calendar"] dialog,
+html[data-access-role="calendar"] #new-departure-alert { display: none !important; }
+html[data-access-role="calendar"] .file-actions .deposit-link,
+html[data-access-role="calendar"] .file-actions button,
+html[data-access-role="calendar"] .modal-backdrop { display: none !important; }
+html[data-access-role="calendar"] .departures-workspace,
+html[data-access-role="calendar"] .events-workspace { grid-template-columns: minmax(0, 1fr); }
+@media print { #app-logout { display: none !important; } }

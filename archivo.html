@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-access-pending="true">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +7,8 @@
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' fill='%23E8000A'/%3E%3Cpath d='M8 5h12l5 5v17H8z' fill='%23fff'/%3E%3Cpath d='M20 5v6h5' fill='none' stroke='%23000' stroke-width='2'/%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="supabase-config.js"></script>
+<link rel="stylesheet" href="acceso.css">
+<script src="acceso.js"></script>
 <style>
   :root {
     --red: #e8000a; --red-dark: #b30008; --red-glow: rgba(232,0,10,0.15);
@@ -135,6 +137,7 @@
     .order-groups { padding: 9px; }
   }
 </style>
+<link rel="stylesheet" href="logistica-nav.css">
 </head>
 <body>
 <header class="site-header">
@@ -146,8 +149,12 @@
     <div class="header-right">ARCHIVO ONLINE</div>
   <nav class="main-nav" aria-label="Navegación principal">
     <a href="index.html">Inicio</a>
+    <a href="planillero.html">Generar planilla</a>
     <a class="active" href="archivo.html">Planillas Hechas</a>
-    <a href="citaciones.html">Citaciones</a>
+    <a href="citaciones.html">Citaciones freelancers</a>
+    <a href="salidas.html">Salida de camiones</a>
+    <a href="eventos.html">Eventos cargados</a>
+    <a href="planillero.html?remito=manual">Remitos</a>
   </nav>
   </div>
 </header>
@@ -177,9 +184,9 @@
     <h2 id="delete-title">¿ELIMINAR PDF?</h2>
     <p>Esta acción elimina el archivo online y su registro de la base de datos. No se puede deshacer.</p>
     <div class="delete-target" id="delete-target"></div>
-    <label class="delete-password-label" for="delete-password">CLAVE DE ELIMINACIÓN</label>
-    <input class="delete-password" id="delete-password" type="password" placeholder="Ingresá la clave" autocomplete="off">
-    <div class="delete-error" id="delete-error" role="alert">CLAVE INCORRECTA</div>
+    <label class="delete-password-label" for="delete-password">ESCRIBÍ ELIMINAR PARA CONFIRMAR</label>
+    <input class="delete-password" id="delete-password" type="text" placeholder="ELIMINAR" autocomplete="off">
+    <div class="delete-error" id="delete-error" role="alert">ESCRIBÍ ELIMINAR PARA CONFIRMAR</div>
     <div class="modal-actions">
       <button class="cancel" id="delete-cancel" type="button">CANCELAR</button>
       <button class="confirm" id="delete-confirm" type="button">ELIMINAR DEFINITIVAMENTE</button>
@@ -244,7 +251,6 @@ const editErrorEl = document.getElementById('edit-error');
 const editFileEl = document.getElementById('edit-pdf-file');
 const editItemsListEl = document.getElementById('edit-items-list');
 const editOpenPlannerEl = document.getElementById('edit-open-planner');
-const DELETE_PASSWORD = 'cr2026';
 let pendingDelete = null;
 let pendingEdit = null;
 let pendingEditSnapshot = null;
@@ -293,7 +299,14 @@ function createDocumentRow(doc) {
   const actions = document.createElement('div'); actions.className = 'file-actions';
   const link = document.createElement('a');
   link.className = 'pdf-link'; link.target = '_blank'; link.rel = 'noopener';
-  link.href = doc.public_url || publicUrl(doc.storage_path);
+  link.href = '#';
+  link.addEventListener('click', event => { event.preventDefault(); window.AppAccess.openPdf(doc.storage_path); });
+  if (!window.AppAccess.isFull()) {
+    link.textContent = 'VER PDF ↗';
+    actions.appendChild(link);
+    action.appendChild(actions);
+    return row;
+  }
   const checklist = checklistByPdf.get(doc.id);
   if (checklist) {
     const deposit = document.createElement('a');
@@ -443,7 +456,7 @@ function snapshotSalaName(snapshot, salaId) {
 }
 
 function areaLabelFromKey(areaKey) {
-  return ({ cctv: 'CCTV', sonido: 'SONIDO', video: 'VIDEO', luces: 'LUCES' })[areaKey] || String(areaKey || '').toUpperCase();
+  return ({ cctv: 'CCTV', sonido: 'SONIDO', video: 'VIDEO', luces: 'LUCES', tarimas: 'TARIMAS' })[areaKey] || String(areaKey || '').toUpperCase();
 }
 
 function parseItemKey(key, snapshot) {
@@ -544,6 +557,7 @@ function collectEditedSnapshot(payload) {
 }
 
 function openEditModal(doc) {
+  if (!window.AppAccess.isFull()) return;
   pendingEdit = doc;
   pendingEditSnapshot = normalizeEventSnapshot(doc.event_data);
   document.getElementById('edit-target').textContent = `${doc.os || 'Sin OS'} · ${doc.lugar || 'Sin lugar'} · ${doc.filename}`;
@@ -699,7 +713,7 @@ function openEditedSnapshotInPlanner() {
   };
   try {
     localStorage.setItem('cr_deposito', JSON.stringify(state));
-    window.location.href = 'index.html';
+    window.location.href = 'planillero.html';
   } catch (error) {
     console.error('No se pudo cargar en el planillero:', error);
     setEditError('No se pudo cargar la planilla en este navegador.');
@@ -707,6 +721,7 @@ function openEditedSnapshotInPlanner() {
 }
 
 function openDeleteModal(doc) {
+  if (!window.AppAccess.isFull()) return;
   pendingDelete = doc;
   document.getElementById('delete-target').textContent = `${doc.os || 'Sin OS'} · ${doc.lugar || 'Sin lugar'} · ${doc.filename}`;
   deletePasswordEl.value = '';
@@ -726,7 +741,7 @@ function closeDeleteModal() {
 async function deleteDocument() {
   const doc = pendingDelete;
   if (!doc) return;
-  if (deletePasswordEl.value !== DELETE_PASSWORD) {
+  if (!window.AppAccess.isFull() || deletePasswordEl.value.trim().toUpperCase() !== 'ELIMINAR') {
     deleteErrorEl.style.display = 'block';
     deletePasswordEl.select();
     return;
@@ -838,6 +853,7 @@ async function getRecoverableDepositItems(doc) {
 }
 
 async function openArchivedRemito(doc, button) {
+  if (!window.AppAccess.isFull()) return;
   if (button.disabled) return;
   button.disabled = true;
   button.textContent = 'CARGANDO...';
@@ -858,7 +874,7 @@ async function openArchivedRemito(doc, button) {
     const quantities = {};
     const observations = {};
     for (const item of items) {
-      const areaKey = ({ CCTV: 'cctv', SONIDO: 'sonido', VIDEO: 'video', LUCES: 'luces' })[String(item.area).toUpperCase()];
+      const areaKey = ({ CCTV: 'cctv', SONIDO: 'sonido', VIDEO: 'video', LUCES: 'luces', TARIMAS: 'tarimas' })[String(item.area).toUpperCase()];
       if (!areaKey) throw new Error(`No se reconoce el área ${item.area}.`);
       let room = rooms.find(row => row.name === item.sala);
       if (!room) {
@@ -879,7 +895,7 @@ async function openArchivedRemito(doc, button) {
       remitoNumero: '', archiveRemitoItems: items
     };
     sessionStorage.setItem('cr_remito_archivo_planilla', JSON.stringify(state));
-    window.location.href = 'index.html?remitoArchivo=1';
+    window.location.href = 'planillero.html?remitoArchivo=1';
   } catch (error) {
     console.error('No se pudo generar remito desde archivo:', error);
     setStatus(`No se pudo generar el remito: ${error.message || error}`, true);
@@ -889,6 +905,7 @@ async function openArchivedRemito(doc, button) {
 }
 
 async function recoverDepositChecklist(doc, button) {
+  if (!window.AppAccess.isFull()) return;
   if (button.disabled) return;
   button.disabled = true;
   button.textContent = 'ABRIENDO...';
@@ -931,6 +948,8 @@ async function recoverDepositChecklist(doc, button) {
 }
 
 async function loadDepositChecklists() {
+  await window.AppAccess.ready;
+  if (!window.AppAccess.isFull()) return;
   checklistByPdf = new Map();
   if (!DEPOSIT_CHECKLISTS_TABLE) return;
   try {

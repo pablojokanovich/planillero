@@ -6,7 +6,7 @@ create extension if not exists pgcrypto;
 create table if not exists public.inventory_combos (
   id uuid primary key default gen_random_uuid(),
   combo_key text not null unique,
-  area text not null check (area in ('cctv', 'sonido', 'video', 'luces')),
+  area text not null check (area in ('cctv', 'sonido', 'video', 'luces', 'tarimas')),
   category_name text not null check (length(trim(category_name)) > 0),
   name text not null check (length(trim(name)) > 0),
   description text not null default '',
@@ -18,7 +18,7 @@ create table if not exists public.inventory_combos (
 create table if not exists public.inventory_combo_items (
   id uuid primary key default gen_random_uuid(),
   combo_id uuid not null references public.inventory_combos(id) on delete cascade,
-  item_area text not null check (item_area in ('cctv', 'sonido', 'video', 'luces')),
+  item_area text not null check (item_area in ('cctv', 'sonido', 'video', 'luces', 'tarimas')),
   category_name text not null check (length(trim(category_name)) > 0),
   item_name text not null check (length(trim(item_name)) > 0),
   qty integer not null default 1 check (qty > 0),

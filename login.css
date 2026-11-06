@@ -1,0 +1,15 @@
+.login-main { max-width: 520px; padding-top: 52px; }
+.login-main h1 { font-size: 28px; font-weight: 700; color: white; }
+.login-modes { border: 0; margin: 0 0 24px; padding: 0; display: grid; gap: 12px; }
+.login-modes legend { margin-bottom: 12px; font-size: 14px; color: #ccc; }
+.login-modes label { display: flex; align-items: center; gap: 10px; padding: 14px; border: 1px solid #555; background: #191919; cursor: pointer; border-radius: 4px; }
+.login-modes label:has(input:checked) { border-color: #ff545d; background: #29171a; }
+.login-modes input { width: 20px; height: 20px; accent-color: #e8000a; }
+.login-field { display: grid; gap: 8px; font-size: 14px; }
+.password-field { display: flex; min-width: 0; }
+.password-field input { width: 100%; min-width: 0; padding: 14px; background: #111; border: 1px solid #777; color: white; font-size: 18px; }
+.password-field button { padding: 10px; background: #292929; color: white; border: 1px solid #777; cursor: pointer; }
+.login-submit { width: 100%; padding: 15px; margin-top: 22px; background: #e8000a; color: white; border: 0; font-size: 18px; font-weight: 700; cursor: pointer; border-radius: 4px; }
+.login-submit:disabled { opacity: .5; }
+#login-error { color: #ff9da3; line-height: 1.5; }
+input:focus-visible, button:focus-visible { outline: 2px solid white; outline-offset: 2px; }

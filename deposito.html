@@ -1,10 +1,12 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" data-access-pending="true">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Deposito online - Congress Rental</title>
 <script src="supabase-config.js"></script>
+<link rel="stylesheet" href="acceso.css">
+<script src="acceso.js"></script>
 <style>
   :root {
     --red: #e8000a;
@@ -60,10 +62,20 @@
     .item { grid-template-columns: 40px 1fr 38px; gap: 9px; }
   }
 </style>
+<link rel="stylesheet" href="logistica-nav.css">
 </head>
-<body>
-<header>
+<body class="deposit-page">
+<header class="site-header deposit-header">
   <div class="brand"><span class="brand-mark">CR</span><span>Deposito online</span></div>
+  <nav class="main-nav" aria-label="Navegación principal">
+    <a href="index.html">Inicio</a>
+    <a href="planillero.html">Generar planilla</a>
+    <a href="archivo.html">Planillas Hechas</a>
+    <a href="citaciones.html">Citaciones freelancers</a>
+    <a href="salidas.html">Salida de camiones</a>
+    <a href="eventos.html">Eventos cargados</a>
+    <a href="planillero.html?remito=manual">Remitos</a>
+  </nav>
 </header>
 <main>
   <div class="status" id="status">Cargando planilla de deposito...</div>

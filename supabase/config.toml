@@ -1,0 +1,5 @@
+[functions.notify-departure]
+verify_jwt = false
+
+[functions.app-access-login]
+verify_jwt = false
