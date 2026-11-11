@@ -394,19 +394,22 @@ function getDocumentEventName(doc) {
   return String(snapshot?.ev?.evento || '').trim();
 }
 
+function archiveAreaKey(value) {
+  return String(value || '').trim().toLocaleUpperCase('es-AR');
+}
+
 function render() {
   const query = searchEl.value.trim().toLowerCase();
   const area = areaEl.value;
   const filtered = documents.filter(doc => {
     const haystack = [doc.os, getDocumentEventName(doc), doc.lugar, doc.sala, doc.area, doc.lider, doc.filename].join(' ').toLowerCase();
-    return (!query || haystack.includes(query)) && (!area || doc.area === area);
+    return (!query || haystack.includes(query)) && (!area || archiveAreaKey(doc.area) === area);
   });
 
   const areas = new Map();
   filtered.forEach(doc => {
-    const areaLabel = String(doc.area || 'SIN ÁREA').trim() || 'SIN ÁREA';
-    const areaKey = areaLabel.toLocaleUpperCase('es-AR');
-    if (!areas.has(areaKey)) areas.set(areaKey, { label: areaLabel, orders: new Map(), total: 0 });
+    const areaKey = archiveAreaKey(doc.area) || 'SIN ÁREA';
+    if (!areas.has(areaKey)) areas.set(areaKey, { label: areaKey, orders: new Map(), total: 0 });
     const areaGroup = areas.get(areaKey);
     const orderLabel = String(doc.os || 'SIN NÚMERO DE ORDEN').trim() || 'SIN NÚMERO DE ORDEN';
     const orderKey = orderLabel.toLocaleUpperCase('es-AR');
@@ -958,7 +961,7 @@ function updateStats() {
   document.getElementById('stat-units').textContent = documents.reduce((sum, doc) => sum + Number(doc.total_units || 0), 0);
 
   const selected = areaEl.value;
-  const areas = [...new Set(documents.map(doc => doc.area).filter(Boolean))].sort();
+  const areas = [...new Set(documents.map(doc => archiveAreaKey(doc.area)).filter(Boolean))].sort();
   areaEl.replaceChildren(new Option('TODAS LAS ÁREAS', ''));
   areas.forEach(area => areaEl.add(new Option(area, area)));
   areaEl.value = areas.includes(selected) ? selected : '';
@@ -1004,7 +1007,7 @@ async function getRecoverableDepositItems(doc) {
     const item = parseItemKey(key, snapshot);
     return { sala: item.sala, area: item.area, category: item.category, equipment: item.item,
       quantity: Number(qty), observations: snapshot.observations?.[key] || '' };
-  }).filter(item => item.quantity > 0 && item.area === doc.area && roomNames.includes(item.sala));
+  }).filter(item => item.quantity > 0 && archiveAreaKey(item.area) === archiveAreaKey(doc.area) && roomNames.includes(item.sala));
   const totalUnits = () => rows.reduce((total, item) => total + item.quantity, 0);
   if (totalUnits() !== Number(doc.total_units) && INVENTORY_COMBOS_TABLE) {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${INVENTORY_COMBOS_TABLE}?select=area,category_name,name`, { headers: archiveHeaders() });
