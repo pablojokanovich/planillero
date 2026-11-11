@@ -106,7 +106,7 @@
   .edit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
   .edit-field.full { grid-column: 1 / -1; }
   .edit-field label { display: block; margin-bottom: 7px; color: var(--muted); font: 10px var(--mono); letter-spacing: 1px; text-transform: uppercase; }
-  .edit-field input { width: 100%; }
+  .edit-field input, .edit-field select { width: 100%; }
   .edit-help { margin-top: 6px; color: var(--muted); font: 10px var(--mono); line-height: 1.45; }
   .edit-error { display: none; margin-bottom: 12px; color: #ff7272; font: 10px var(--mono); letter-spacing: 1px; }
   .edit-items-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 10px 0 8px; }
@@ -193,7 +193,17 @@
   <form id="import-form">
     <div class="edit-grid">
       <div class="edit-field"><label for="import-os">NÚMERO DE ORDEN</label><input id="import-os" name="os" required maxlength="100" autocomplete="off" autofocus></div>
-      <div class="edit-field"><label for="import-area">ÁREA</label><input id="import-area" name="area" required maxlength="100"></div>
+      <div class="edit-field">
+        <label for="import-area">ÁREA</label>
+        <select id="import-area" name="area" required>
+          <option value="" selected disabled>Elegí un área</option>
+          <option>CCTV</option>
+          <option>VIDEO</option>
+          <option>SONIDO</option>
+          <option>LUCES</option>
+          <option>TARIMAS</option>
+        </select>
+      </div>
       <div class="edit-field"><label for="import-pdf">PDF</label><input id="import-pdf" type="file" accept="application/pdf,.pdf" required></div>
     </div>
     <details id="import-details">
@@ -528,7 +538,7 @@ importForm.addEventListener('submit', async event => {
     if (!importOrderKey(os) || ['—', '-', 'SIN OS', 'SINOS'].includes(importOrderKey(os))) {
       throw new Error('Ingresá un número de orden válido.');
     }
-    if (!area) throw new Error('Ingresá el área de la planilla.');
+    if (!area) throw new Error('Elegí el área de la planilla.');
     if (!file || !/\.pdf$/i.test(file.name) || await file.slice(0, 5).text() !== '%PDF-') {
       throw new Error('Elegí un archivo PDF válido.');
     }
