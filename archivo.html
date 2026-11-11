@@ -11,6 +11,7 @@
 <script src="supabase-config.js"></script>
 <link rel="stylesheet" href="acceso.css">
 <script src="acceso.js"></script>
+<script src="logistica.js"></script>
 <style>
   :root {
     --red: #e8000a; --red-dark: #b30008; --red-glow: rgba(232,0,10,0.15);
@@ -97,6 +98,11 @@
   .edit-modal { width: min(720px, 100%); max-height: min(92vh, 760px); overflow: auto; padding: 25px; background: #141414; border: 1px solid #444; border-top: 3px solid var(--red); box-shadow: 0 25px 80px rgba(0,0,0,.6); }
   .edit-modal h2 { margin: 0 0 8px; font: 800 25px var(--display); letter-spacing: 1px; }
   .edit-modal p { color: var(--muted); line-height: 1.5; }
+  #import-modal { color: inherit; }
+  #import-modal::backdrop { background: #000b; }
+  #import-open { margin: 0 0 18px; }
+  #import-modal details { margin-top: 16px; }
+  #import-modal summary { cursor: pointer; margin-bottom: 10px; }
   .edit-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
   .edit-field.full { grid-column: 1 / -1; }
   .edit-field label { display: block; margin-bottom: 7px; color: var(--muted); font: 10px var(--mono); letter-spacing: 1px; text-transform: uppercase; }
@@ -163,7 +169,8 @@
 <main>
   <p class="eyebrow">// DOCUMENTOS EN LA NUBE</p>
   <h1>Órdenes guardadas</h1>
-  <p class="lead">Cada PDF generado al imprimir aparece aquí automáticamente. Podés buscarlo por OS, lugar, sala, área o responsable.</p>
+  <p class="lead">Consultá las planillas generadas en la web y las que subas desde otro lugar.</p>
+  <button id="import-open" class="edit-btn" type="button" data-access="full">+ SUBIR PLANILLA PDF</button>
 
   <section class="stats" aria-label="Estadísticas">
     <div class="stat"><span>PDF guardados</span><strong id="stat-total">—</strong></div>
@@ -181,6 +188,32 @@
   <div class="grouped-archive" id="grouped-archive"></div>
   <div class="empty" id="empty"><strong>NO HAY DOCUMENTOS</strong><span>Generá un PDF desde el planillero o cambiá los filtros.</span></div>
 </main>
+<dialog id="import-modal" class="edit-modal" aria-labelledby="import-title">
+  <h2 id="import-title">SUBIR PLANILLA PDF</h2>
+  <form id="import-form">
+    <div class="edit-grid">
+      <div class="edit-field"><label for="import-os">NÚMERO DE ORDEN</label><input id="import-os" name="os" required maxlength="100" autocomplete="off" autofocus></div>
+      <div class="edit-field"><label for="import-area">ÁREA</label><input id="import-area" name="area" required maxlength="100"></div>
+      <div class="edit-field"><label for="import-pdf">PDF</label><input id="import-pdf" type="file" accept="application/pdf,.pdf" required></div>
+    </div>
+    <details id="import-details">
+      <summary>Datos opcionales del evento</summary>
+      <div class="edit-grid">
+        <div class="edit-field"><label for="import-event">EVENTO</label><input id="import-event" name="evento" maxlength="200"></div>
+        <div class="edit-field"><label for="import-place">LUGAR</label><input id="import-place" name="lugar" maxlength="200"></div>
+        <div class="edit-field"><label for="import-room">SALA</label><input id="import-room" name="sala" maxlength="100"></div>
+        <div class="edit-field"><label for="import-start">ARMADO</label><input id="import-start" name="armado" type="date"></div>
+        <div class="edit-field"><label for="import-end">DESARME</label><input id="import-end" name="desarme" type="date"></div>
+      </div>
+    </details>
+    <p class="edit-help" id="import-calendar-note" aria-live="polite"></p>
+    <p id="import-error" role="alert" hidden></p>
+    <div class="modal-actions">
+      <button class="cancel" id="import-cancel" type="button">CANCELAR</button>
+      <button class="confirm" id="import-save" type="submit">SUBIR PDF</button>
+    </div>
+  </form>
+</dialog>
 <div class="modal-backdrop" id="delete-modal" role="dialog" aria-modal="true" aria-labelledby="delete-title">
   <div class="delete-modal">
     <h2 id="delete-title">¿ELIMINAR PDF?</h2>
@@ -310,6 +343,7 @@ function createDocumentRow(doc) {
     return row;
   }
   const checklist = checklistByPdf.get(doc.id);
+  const snapshot = normalizeEventSnapshot(doc.event_data);
   if (checklist) {
     const deposit = document.createElement('a');
     deposit.className = 'pdf-link deposit-link';
@@ -318,7 +352,7 @@ function createDocumentRow(doc) {
     deposit.href = depositUrl(checklist);
     deposit.textContent = 'DEPOSITO';
     actions.appendChild(deposit);
-  } else if (normalizeEventSnapshot(doc.event_data)) {
+  } else if (snapshot && snapshot.source !== 'external_pdf') {
     const deposit = document.createElement('button');
     deposit.className = 'pdf-link deposit-link';
     deposit.type = 'button';
@@ -338,7 +372,9 @@ function createDocumentRow(doc) {
   remitoButton.type = 'button';
   remitoButton.textContent = 'GENERAR REMITO';
   remitoButton.addEventListener('click', () => openArchivedRemito(doc, remitoButton));
-  actions.append(link, remitoButton, editButton, deleteButton);
+  actions.append(link);
+  if (checklist || snapshot?.source !== 'external_pdf') actions.append(remitoButton);
+  actions.append(editButton, deleteButton);
   action.appendChild(actions);
   return row;
 }
@@ -432,6 +468,124 @@ function archiveHeaders(extra = {}) {
     ...extra,
   };
 }
+
+const importModal = document.getElementById('import-modal');
+const importForm = document.getElementById('import-form');
+const importError = document.getElementById('import-error');
+const importSave = document.getElementById('import-save');
+const importCancel = document.getElementById('import-cancel');
+const importFile = document.getElementById('import-pdf');
+let importAttempt = null;
+
+function importOrderKey(value) {
+  return window.Logistics.normalizeOrder(value).toUpperCase();
+}
+
+function importedOrderHasDates(os) {
+  const key = importOrderKey(os);
+  return key && documents.some(doc => {
+    const event = normalizeEventSnapshot(doc.event_data)?.ev;
+    return importOrderKey(doc.os || event?.os) === key &&
+      [doc.armado, doc.desarme, event?.armado, event?.desarme].some(window.Logistics.isoDate);
+  });
+}
+
+function updateImportCalendarNote() {
+  const os = importForm.elements.os.value;
+  document.getElementById('import-calendar-note').textContent = importedOrderHasDates(os)
+    ? 'La planilla se sumará a esta orden en el calendario.'
+    : 'Agregá una fecha de armado o desarme para ubicar la orden en el calendario. Sin fecha quedará en la lista de eventos.';
+}
+
+document.getElementById('import-open').addEventListener('click', async () => {
+  await window.AppAccess.ready;
+  if (!window.AppAccess.isFull() || importModal.open) return;
+  importForm.reset();
+  importAttempt = null;
+  importError.hidden = true;
+  document.getElementById('import-details').open = false;
+  updateImportCalendarNote();
+  importModal.showModal();
+});
+importForm.elements.os.addEventListener('input', updateImportCalendarNote);
+importCancel.addEventListener('click', () => importModal.close());
+importModal.addEventListener('cancel', event => {
+  if (importSave.disabled) event.preventDefault();
+});
+
+importForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  if (!window.AppAccess.isFull() || importSave.disabled) return;
+  const fields = new FormData(importForm);
+  const os = fields.get('os').trim();
+  const area = fields.get('area').trim();
+  const file = importFile.files[0];
+  importError.hidden = true;
+  importSave.disabled = importCancel.disabled = true;
+  importSave.textContent = 'SUBIENDO…';
+  importForm.inert = true;
+  try {
+    if (!importOrderKey(os) || ['—', '-', 'SIN OS', 'SINOS'].includes(importOrderKey(os))) {
+      throw new Error('Ingresá un número de orden válido.');
+    }
+    if (!area) throw new Error('Ingresá el área de la planilla.');
+    if (!file || !/\.pdf$/i.test(file.name) || await file.slice(0, 5).text() !== '%PDF-') {
+      throw new Error('Elegí un archivo PDF válido.');
+    }
+    if (file.size > 50 * 1024 * 1024) throw new Error('El PDF supera el límite de 50 MB.');
+    const armado = fields.get('armado');
+    const desarme = fields.get('desarme');
+    if (armado && desarme && desarme < armado) throw new Error('El desarme debe ser posterior o igual al armado.');
+    if (importAttempt?.file !== file) {
+      const now = new Date();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      importAttempt = { file, path: `${now.getFullYear()}/${month}/externa-${window.Logistics.uuid()}.pdf`, uploaded: false };
+    }
+    const { path } = importAttempt;
+    const storageUrl = `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}`;
+    if (!importAttempt.uploaded) {
+      const upload = await fetch(`${storageUrl}/${path}`, {
+        method: 'POST',
+        headers: archiveHeaders({ 'Content-Type': 'application/pdf', 'x-upsert': 'false' }),
+        body: file,
+      });
+      if (!upload.ok) {
+        const error = await upload.json().catch(() => ({}));
+        if (upload.status !== 409 && String(error.statusCode) !== '409') {
+          throw new Error('No se pudo subir el PDF. Revisá la conexión y volvé a intentar.');
+        }
+      }
+      importAttempt.uploaded = true;
+    }
+    const metadata = {
+      os, filename: file.name, storage_path: path, public_url: publicUrl(path), file_size: file.size,
+      area, sala: fields.get('sala').trim(), lugar: fields.get('lugar').trim(),
+      armado, desarme, total_units: 0,
+      event_data: { source: 'external_pdf', ev: { evento: fields.get('evento').trim() } },
+    };
+    const saved = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?on_conflict=storage_path`, {
+      method: 'POST',
+      headers: archiveHeaders({ 'Content-Type': 'application/json', Prefer: 'resolution=ignore-duplicates,return=minimal' }),
+      body: JSON.stringify(metadata),
+    });
+    if (!saved.ok) throw new Error('No se pudo registrar la planilla. Volvé a presionar Subir PDF para reintentar.');
+    const scheduled = armado || desarme || importedOrderHasDates(os);
+    importAttempt = null;
+    importModal.close();
+    searchEl.value = '';
+    areaEl.value = '';
+    await loadDocuments();
+    setStatus(scheduled ? 'PDF guardado. Disponible en Planillas hechas y en el calendario de eventos.'
+      : 'PDF guardado. La orden aparece en Eventos cargados sin fecha.');
+  } catch (error) {
+    importError.textContent = error instanceof TypeError ? 'Se interrumpió la conexión. Volvé a presionar Subir PDF para reintentar.' : error.message;
+    importError.hidden = false;
+  } finally {
+    importSave.disabled = importCancel.disabled = false;
+    importSave.textContent = 'SUBIR PDF';
+    importForm.inert = false;
+  }
+});
 
 function setEditError(message = '') {
   editErrorEl.textContent = message;
