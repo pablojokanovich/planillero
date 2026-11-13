@@ -40,3 +40,39 @@ test('always supplies safe room IDs and preserves partial event dates', () => {
   assert.deepEqual(draft.salas, [{ id: 'sala-1', name: 'SALA A' }]);
   assert.equal(draft.ev.armado, '');
 });
+
+test('the direct planner page imports after recovery, preserving existing drafts', () => {
+  const html = readFileSync(join(__dirname, '..', 'planillero.html'), 'utf8');
+  assert.match(html, /<script src="agenda-import.js"><\/script>/);
+  assert.match(html, /const recovered = loadState\(\);\s*const imported = applyAgendaPreload\(recovered\)/);
+  const state = new Map([['cr_deposito', '{"previous":true}']]);
+  const location = { hash: fragment(payload()), pathname: '/planillero.html', search: '' };
+  const sandbox = vm.createContext({
+    CongressAgendaImport: api, URLSearchParams, window: { location },
+    history: { replaceState: (_, __, url) => { location.hash = new URL(url, 'https://example.test').hash; } },
+    document: { body: { classList: { contains: () => false } } },
+    agendaEventKey: 'agenda:6', eventId: 'old', agendaImportNotice: '',
+    isArchivedRemito: () => false, confirm: () => false, createEventId: () => 'new',
+    plannerDraftKey: () => 'cr_deposito',
+    plannerDraftStorage: () => ({ getItem: key => state.get(key), setItem: (key, value) => state.set(key, value) }),
+    loadState: () => true
+  });
+  vm.runInContext(html.match(/function applyAgendaPreload\(recovered\) \{[\s\S]*?\n\}/)[0], sandbox);
+  assert.equal(sandbox.applyAgendaPreload(true), false);
+  assert.equal(state.get('cr_deposito'), '{"previous":true}');
+  sandbox.confirm = () => true;
+  assert.equal(sandbox.applyAgendaPreload(true), true);
+  assert.equal(state.get('cr_agenda_backup:agenda%3A6'), '{"previous":true}');
+  const draft = JSON.parse(state.get('cr_deposito'));
+  assert.equal(draft.ev.os, '0029');
+  assert.equal(draft.ev.evento, 'Congreso & TV');
+  assert.deepEqual(draft.salas.map(room => room.name), ['A', 'B']);
+  assert.equal(location.hash, '');
+  location.hash = fragment(payload());
+  sandbox.agendaEventKey = 'agenda:7';
+  sandbox.confirm = () => { throw new Error('Same event must not prompt'); };
+  draft.quantities.camera = 2;
+  state.set('cr_deposito', JSON.stringify(draft));
+  assert.equal(sandbox.applyAgendaPreload(true), true);
+  assert.equal(JSON.parse(state.get('cr_deposito')).quantities.camera, 2);
+});
