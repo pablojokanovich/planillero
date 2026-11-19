@@ -14,7 +14,6 @@
 <script src="supabase-config.js"></script>
 <link rel="stylesheet" href="acceso.css">
 <script src="acceso.js"></script>
-<script src="agenda-import.js"></script>
 <style>
   :root {
     --red: #E8000A;
@@ -2390,19 +2389,19 @@ const AREAS = {
   sonido: {
     label: 'SONIDO',
     data: [
-      { cat: 'CONSOLAS', items: ['PRESONUS 16CH CREX','Q16','Q24','LS9','X32','DLIVE','SQ6','AUDIOLAB','ALLEN AND HEAT POTENCIADA','RACK NEGRO CREX','PRESONUS','RACK ROJO','YAMAHA CL3','YAMAHA QL1'] },
-      { cat: 'PATCHERAS DIGITALES', items: ['AR2412 (QU)','MIXRACK (DLIVE)','DX 168 (DLIVE)','BEHRINGER S16 (X32)','UTP CAT 6 100MTS','MANGUERA UTP X 2 50MTS','SNAKE DANTE 8X8','RIO 32'] },
-      { cat: 'POTENCIAS', items: ['SAMSON','PHONIC','LABGROUPEN','AMPRO','NXAMP 4X1','NXAMP 4X4','D40'] },
-      { cat: 'ENERGIA', items: ['USINA ROJA 32A','USINA NEGRA 32A','USINA NEGRA 125A','USINA ROJA 125','CHIC. M 32A TERMINAL','CHIC. M 32A PELADO','CHIC. M 63A TERMINAL','CHIC. M 63A PELADO','CHIC. H 32A TERMINAL','CHIC. H 32A PELADO','CHIC. H 63A TERMINAL','CHIC. H 63A PELADO','ZAPATILLON 220','ZAPATILLA 220','ALARGUE C/ BIPLO 220','TABLERITO','MANGUERA 32A','MANGUERA 63A','CABLES UNIPOLARES','TRIANGULITO 50M','TRIANGULITO 30M','TIRANGULITO 15M','PASACABLES','CAJA EMPALME','ADAP. SHUCKO A 3P','ADAP. 63 A 125','CHICOTE 125 A TERMINAL'] },
+      { cat: 'CONSOLAS', items: ['PRESONUS 16CH CREX','Q5D','Q24','LS9','X32','DLIVE','SQ6','AUDIOLAB','ALLEN AND HEAT POTENCIADA','RACK NEGRO CREX','PRESONUS','RACK ROJO','YAMAHA CL3','YAMHA QL1','RIORIO'] },
+      { cat: 'PATCHERAS DIGITALES', items: ['AR2412 _(QU)','MIXRACK (DLIVE)','DX 168 (DLIVE)','BEHRINGER S16 (X32)','UTP CAT 6 100MTS','MANGUERA UTP X 2 50MTS','SNAKE DANTE 8X8','RIO 32'] },
+      { cat: 'POTENCIAS', items: ['SAMSOM','PHONIC','LAB GROUPEN','AMPRO','NXAMP 4X1','NXAMP 4X4','D40'] },
+      { cat: 'ENERGIA', items: ['USINA ROJA 32A','CHIC. M 32A TERMINAL','CHIC. H 32A TERMINAL','ZAPATILLON 220','MANGUERA 32A','TRIANGULITO 30M','ADAP. SHUCKO A 3P','USINA NEGRA 32A','CHIC. M 32A PELADO','CHIC. H 32A PELADO','ZAPATILLA 220','MANGUERA 63A','TIRANGULITO 15M','ADAP. 63 A 125','USINA NEGRA 125A','CHIC. M 63A TERMINAL','CHIC. H 63A TERMINAL','ALARGUE C/ BIPLO 220','CABLES UNIPOLARES','PASACABLES','CHICOTE 125 A TERMINAL','USINA ROJA 125','CHIC. M 63A PELADO','CHIC. H 63A PELADO','TABLERITO','TRIANGULITO 50M','CAJA EMPALME'] },
       { cat: 'PUNTUALES', items: ['PS10','ID24','DB ARENA','RCF ART 312','DAS ACTION 508A','EV ELX 15P','KRRAY200'] },
       { cat: 'ACTIVOS', items: ['CROMO 8','T10','Y8','Y12','PIE DE PARLANTE COMUN','PIE DE PARLANTE ALTO'] },
       { cat: 'LINE ARRAY', items: ['M620','STM M28','GE0 S8','BAUL ACC M20','BAUL ACC GEO','BAUL ACC STM','KRRAY KH4'] },
       { cat: 'SUBS', items: ['LS18 (M620)','STM S118 (STM)','CD12 (GEO)','LS500 (PS10)','RCF ACTIVO','SUB DOBLE 21 KH4','Y-SUB'] },
-      { cat: 'MICROFONIA', items: ['CAJA DIRECTA','CUELLO DE GANZO','SHURE SLX VOLANTE','SHURE SLX HEADSET','SHURE IN EAR MIPRO','VOLANTE PRO EV','HEADSETS PRO EV','BASE DOBLE EWD','SLXD COMBO','PIE DE MESA','PIE JIRAFA CORTO','PIE JIRAFA'] },
+      { cat: 'MICROFONIA', items: ['SM58','SM57','PG58','BETA52','BETA58','SM81','BETA 98','KIT BATERIA','CAJA DIRECTA','CUELLO DE GANZO','SHURE SLX VOLANTE','SHURE SLX HEADSET','SHURE IN EAR MIPRO','VOLANTE PRO EV','HEADSETS PRO EV','BASE DOBLE EWD','SLXD COMBO','BASE Nª (casillero 1)','BASE Nª (casillero 2)','BASE Nª (casillero 3)','BASE Nª23','PIE DE MESA','PIE JIRAFA CORTO','PIE JIRAFA'] },
       { cat: 'DELEGADOS', items: ['CCS800','CCS900','DICENTIS','DISCUSION'] },
       { cat: 'TRADUCCION ANALOGA', items: ['CCU','AUDIO MEDIA','HOUSING','CONSOLETA','AURICULARES MONO','RECEPTORES 7 CH','RECEPTORES 16 CH','RADIADOR 15','CABINA','AURICULARES STEREO'] },
       { cat: 'TRADUCCION DICENTIS - INTEGRUS', items: ['RACK DICENTIS','RACK NG','DANTE GATEWAY','OMNEO','PS','RACK MIC DICENTIS','FICHEROS','RECEPTORES','RADIADOR 15','RADIADOR 25','AURICULARES STEREO','CONSOLETA INTEGRUS','CONSOLETA DICENTIS','CAMARA DOMO','LAMPARA DE CABINA','EXTRACTOR DE AIRE','AURICULARES STEREO CABINA','BIOMBO','GRABADORA ZOOM'] },
-      { cat: 'CABLES DE AUDIO - TRADUCCION', items: ['SPEAKON 2MTS','SPEAKON 5MTS','SPEAKON 10MTS','SPEAKON 25MTS','SPEAKON 50MTS','SPEAKON 5MTS (4\')','SPEAKON 10MTS (4\')','SPEAKON 25MTS (4\')','SPEAKON 50MTS (4\')','CANNON 2 MTS','CANNON 5/10 MTS','CANNON 15/20 MTS','CANNON 30 MTS','CANNON 50 MTS','CANNON 100 MTS','CCS 5/10 MTS','CCS 15/20 MTS','CCS 20/30 MTS','CANNON M A PLUG','CANNON H A PLUG','RCA A RCA','RCA A PLUG','SONIDO DE PC','PLACA DE AUDIO USB','PLUG A PLUG','DICENTIS 2MTS','DICENTIS 5MTS','DICENTIS 10 MTS','DICENTIS 15 MTS','DICENTIS 25 MTS','BNC 25 MTS','BNC 50 MTS','DCN 5/10 MTS','DCN 15/20 MTS','DCN 20/30 MTS'] },
+      { cat: 'CABLES DE AUDIO - TRADUCCION', items: ['SPEAKON 2MTS','SPEAKON 5MTS','SPEAKON 10MTS','SPEAKON 25MTS','SPEAKON 50MTS','SPEAKON 5MTS (4`)','SPEAKON 10MTS (4`)','SPEAKON 25MTS (4`)','SPEAKON 50MTS (4`)','CANNON 2 MTS','CANNON 5/10 MTS','CANNON 15/20 MTS','CANNON 30 MTS','CANNON 50 MTS','CANNON 100 MTS','CCS 5/10 MTS','CCS 15/20 MTS','CCS 20/30 MTS','CANNON M A PLUG','CANNON H A PLUG','RCA A RCA','RCA A PLUG','SONIDO DE PC','PLACA DE AUDIO USB','PLUG A PLUG','DICENTIS 2MTS','DICENTIS 5MTS','DICENTIS 10 MTS','DICENTIS 15 MTS','DICENTIS 25 MTS','BNC 25 MTS','BNC 50 MTS','DCN 5/10 MTS','DCN 15/20 MTS','DCN 20/30 MTS'] },
     ]
   },
   video: {
@@ -2452,8 +2451,6 @@ let bultos = [];
 let bultoCounter = 0;
 let archiveRemitoItems = [];
 let eventId = createEventId();
-let agendaEventKey = '';
-let agendaImportNotice = '';
 
 const VMIX_CATEGORY = 'vMix';
 const VMIX_KIT_ITEM = 'KIT VMIX';
@@ -2590,7 +2587,6 @@ window.addEventListener('DOMContentLoaded', async () => {
   const onlineCombosLoaded = await loadOnlineCombos();
   if (!onlineCombosLoaded) loadCombos();
   const recovered = loadState();
-  const imported = applyAgendaPreload(recovered);
   migrateLegacyVmixQuantities();
   if (salas.length === 0) addSala('SALA A', false);
   renderSalaTabs();
@@ -2598,9 +2594,7 @@ window.addEventListener('DOMContentLoaded', async () => {
   restoreQuantities();
   if (currentSalaId) switchAreaInSala(currentSalaId, currentArea);
   updateFloatSummary();
-  if (agendaImportNotice) showToast(agendaImportNotice);
-  else if (imported) showToast('Datos del evento precargados desde la agenda.');
-  else if (recovered) showToast('Planilla recuperada automáticamente.');
+  if (recovered) showToast('Planilla recuperada automáticamente.');
   if (recovered && isArchivedRemito()) goToStep(4);
   if (document.body.classList.contains('manual-remito-mode')) document.getElementById('float-summary').style.display = 'none';
 });
@@ -2666,7 +2660,7 @@ function renderSalaTabs() {
     tab.onclick = () => switchSala(sala.id);
     tab.ondblclick = () => renameSala(sala.id);
     tab.title = 'Doble click para renombrar';
-    tab.innerHTML = htmlEscape(sala.name) +
+    tab.innerHTML = sala.name +
       (total > 0 ? `<span class="sala-tab-count">${total}</span>` : '') +
       `<button class="sala-tab-remove" onclick="removeSala('${sala.id}', event)">&#215;</button>`;
     bar.appendChild(tab);
@@ -3064,7 +3058,6 @@ function saveState() {
   const state = {
     version: 2,
     eventId,
-    agendaEventKey,
     ev: {
       os: document.getElementById('ev-os').value,
       evento: document.getElementById('ev-evento').value,
@@ -3114,36 +3107,10 @@ function loadState() {
     currentSalaId = salas.some(s => s.id === state.currentSalaId) ? state.currentSalaId : (salas[0]?.id || null);
     currentArea = AREAS[state.currentArea] ? state.currentArea : 'cctv';
     eventId = state.eventId || createEventId();
-    agendaEventKey = typeof state.agendaEventKey === 'string' ? state.agendaEventKey : '';
     updateHeaderInfo();
     return Boolean(salas.length || Object.values(ev).some(Boolean) || Object.keys(quantities).length);
   } catch (error) {
     console.warn('No se pudo recuperar la planilla local:', error);
-    return false;
-  }
-}
-
-function applyAgendaPreload(recovered) {
-  if (isArchivedRemito() || document.body.classList.contains('manual-remito-mode')) return false;
-  let payload;
-  try { payload = CongressAgendaImport.read(window.location.hash); }
-  catch (error) { agendaImportNotice = 'No se pudo precargar el evento de la agenda.'; return false; }
-  if (!payload) return false;
-  if (recovered && agendaEventKey !== payload.eventKey && !confirm('Hay otra planilla en este navegador. ¿Cargar el evento de la agenda? Se conservará una copia del borrador anterior.')) return false;
-  try {
-    if (!recovered || agendaEventKey !== payload.eventKey) {
-      const storage = plannerDraftStorage();
-      const previous = storage.getItem(plannerDraftKey());
-      if (previous) storage.setItem('cr_agenda_backup:' + encodeURIComponent(agendaEventKey || eventId), previous);
-      storage.setItem(plannerDraftKey(), JSON.stringify(CongressAgendaImport.draft(payload, createEventId())));
-      loadState();
-    }
-    const fragment = new URLSearchParams(window.location.hash.slice(1));
-    fragment.delete('agenda');
-    history.replaceState(null, '', window.location.pathname + window.location.search + (fragment.size ? '#' + fragment.toString() : ''));
-    return true;
-  } catch (error) {
-    agendaImportNotice = 'No se pudo guardar la precarga.';
     return false;
   }
 }
@@ -3204,7 +3171,7 @@ function restoreQuantities() {
 
 function clearAll() {
   if (!confirm('¿Limpiar TODOS los datos del evento?')) return;
-  quantities = {}; observations = {}; bultos = []; bultoCounter = 0; salas = []; salaCounter = 0; currentSalaId = null; eventId = createEventId(); agendaEventKey = '';
+  quantities = {}; observations = {}; bultos = []; bultoCounter = 0; salas = []; salaCounter = 0; currentSalaId = null; eventId = createEventId();
   archiveRemitoItems = [];
   try { plannerDraftStorage().removeItem(plannerDraftKey()); } catch(e) {}
   document.querySelectorAll('input[type="text"], input[type="date"]').forEach(i => {
@@ -3285,7 +3252,7 @@ function getAreaItemsForSala(salaId, areaKey) {
   for (const cat of AREAS[areaKey].data) {
     const catItems = cat.items
       .filter(item => !isComboName(areaKey, cat.cat, item))
-      .filter(item => quantities[`${salaId}::${areaKey}::${cat.cat}::${item}`])
+      .filter(item => Number(quantities[`${salaId}::${areaKey}::${cat.cat}::${item}`]) > 0)
       .map(item => ({ name: item, qty: quantities[`${salaId}::${areaKey}::${cat.cat}::${item}`], obs: observations[`${salaId}::${areaKey}::${cat.cat}::${item}`] || '' }));
     const allItems = catItems;
     if (allItems.length > 0) result.push({ cat: cat.cat, items: allItems });
@@ -3301,14 +3268,14 @@ function buildSummary() {
   const hdr = document.createElement('div');
   hdr.className = 'summary-header';
   hdr.innerHTML = `<div class="summary-meta">
-    <div class="meta-item"><label>OS</label><span>${htmlEscape(ev.os)}</span></div>
-    <div class="meta-item"><label>EVENTO</label><span>${htmlEscape(ev.evento)}</span></div>
-    <div class="meta-item"><label>LUGAR</label><span>${htmlEscape(ev.lugar)}</span></div>
-    <div class="meta-item"><label>SALAS</label><span>${salas.map(s=>htmlEscape(s.name)).join(', ')}</span></div>
-    <div class="meta-item"><label>ARMADO</label><span>${htmlEscape(ev.armado)}</span></div>
-    <div class="meta-item"><label>DESARME</label><span>${htmlEscape(ev.desarme)}</span></div>
-    <div class="meta-item"><label>LÍDER</label><span>${htmlEscape(ev.lider)}</span></div>
-    ${ev.notas ? `<div class="meta-item"><label>NOTAS</label><span>${htmlEscape(ev.notas)}</span></div>` : ''}
+    <div class="meta-item"><label>OS</label><span>${ev.os}</span></div>
+    <div class="meta-item"><label>EVENTO</label><span>${ev.evento}</span></div>
+    <div class="meta-item"><label>LUGAR</label><span>${ev.lugar}</span></div>
+    <div class="meta-item"><label>SALAS</label><span>${salas.map(s=>s.name).join(', ')}</span></div>
+    <div class="meta-item"><label>ARMADO</label><span>${ev.armado}</span></div>
+    <div class="meta-item"><label>DESARME</label><span>${ev.desarme}</span></div>
+    <div class="meta-item"><label>LÍDER</label><span>${ev.lider}</span></div>
+    ${ev.notas ? `<div class="meta-item"><label>NOTAS</label><span>${ev.notas}</span></div>` : ''}
   </div>`;
   container.appendChild(hdr);
 
@@ -3335,7 +3302,7 @@ function buildSummary() {
         const table = document.createElement('table');
         table.className = 'summary-table';
         table.innerHTML = `<thead><tr>
-          <th colspan="2" style="color:var(--red);letter-spacing:2px">${htmlEscape(sala.name)}</th>
+          <th colspan="2" style="color:var(--red);letter-spacing:2px">${sala.name}</th>
           <th style="text-align:center">CANT.</th></tr></thead>`;
         const tbody = document.createElement('tbody');
         for (const cat of items) {
@@ -4028,7 +3995,7 @@ function buildPdfButtons() {
       if (!Object.keys(quantities).some(k => k.startsWith(`${sala.id}::${areaKey}::`))) continue;
       const btn = document.createElement('button');
       btn.className = 'btn btn-primary';
-      btn.innerHTML = `PDF ${htmlEscape(sala.name)} &middot; ${area.label}`;
+      btn.innerHTML = `PDF ${sala.name} &middot; ${area.label}`;
       btn.onclick = () => printSalaArea(sala.id, areaKey);
       group.appendChild(btn);
     }
@@ -4579,7 +4546,7 @@ function buildPdfPage(ev, area, areaItems, salaName) {
       rows += `<tr><td class="equipo-col">${item.name}</td><td class="qty-col">${item.qty}</td><td class="check-col"><div class="pdf-checkbox"></div></td><td class="obs-col">${item.obs}</td></tr>`;
     }
   }
-  const notasRow = ev.notas ? `<div style="font-size:10px;margin-top:8px;color:#444"><b>NOTAS:</b> ${htmlEscape(ev.notas)}</div>` : '';
+  const notasRow = ev.notas ? `<div style="font-size:10px;margin-top:8px;color:#444"><b>NOTAS:</b> ${ev.notas}</div>` : '';
   const logoSrc = document.querySelector('.logo img')?.src || '';
   return `<div class="pdf-page">
     <div class="pdf-header">
@@ -4588,20 +4555,20 @@ function buildPdfPage(ev, area, areaItems, salaName) {
       </div>
       <div style="text-align:right">
         <div class="pdf-area-badge">${area.label}</div>
-        <div style="font-size:11px;font-weight:700;letter-spacing:2px;margin-top:6px;border:2px solid black;padding:2px 10px;display:inline-block">${htmlEscape(salaName)}</div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;margin-top:6px;border:2px solid black;padding:2px 10px;display:inline-block">${salaName}</div>
       </div>
     </div>
     <div class="pdf-event-box">
       <div class="pdf-event-label">NOMBRE DE EVENTO</div>
-      <div class="pdf-event-value">${htmlEscape(ev.evento)}</div>
+      <div class="pdf-event-value">${ev.evento}</div>
     </div>
     <div class="pdf-meta-grid">
-      <div class="pdf-meta-item"><div class="pdf-meta-label">OS</div><div class="pdf-meta-value">${htmlEscape(ev.os)}</div></div>
-      <div class="pdf-meta-item"><div class="pdf-meta-label">LUGAR</div><div class="pdf-meta-value">${htmlEscape(ev.lugar)}</div></div>
-      <div class="pdf-meta-item"><div class="pdf-meta-label">SALA</div><div class="pdf-meta-value">${htmlEscape(salaName)}</div></div>
-      <div class="pdf-meta-item"><div class="pdf-meta-label">ARMADO</div><div class="pdf-meta-value">${htmlEscape(ev.armado)}</div></div>
-      <div class="pdf-meta-item"><div class="pdf-meta-label">DESARME</div><div class="pdf-meta-value">${htmlEscape(ev.desarme)}</div></div>
-      <div class="pdf-meta-item"><div class="pdf-meta-label">LÍDER</div><div class="pdf-meta-value">${htmlEscape(ev.lider)}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">OS</div><div class="pdf-meta-value">${ev.os}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">LUGAR</div><div class="pdf-meta-value">${ev.lugar}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">SALA</div><div class="pdf-meta-value">${salaName}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">ARMADO</div><div class="pdf-meta-value">${ev.armado}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">DESARME</div><div class="pdf-meta-value">${ev.desarme}</div></div>
+      <div class="pdf-meta-item"><div class="pdf-meta-label">LÍDER</div><div class="pdf-meta-value">${ev.lider}</div></div>
     </div>
     ${notasRow}
     <table class="pdf-table" style="margin-top:12px">
@@ -4609,8 +4576,8 @@ function buildPdfPage(ev, area, areaItems, salaName) {
       <tbody>${rows}</tbody>
     </table>
     <div class="pdf-footer">
-      <div><div>Generado: ${nowStr}</div><div style="margin-top:2px">LÍDER: ${htmlEscape(ev.lider)}</div></div>
-      <div class="pdf-sign">${htmlEscape(ev.lider)}</div>
+      <div><div>Generado: ${nowStr}</div><div style="margin-top:2px">LÍDER: ${ev.lider}</div></div>
+      <div class="pdf-sign">${ev.lider}</div>
     </div>
   </div>`;
 }
@@ -4638,6 +4605,25 @@ function showToast(msg) {
 // ════════════════════════════════════════
 
 const DEFAULT_AREAS = JSON.parse(JSON.stringify(AREAS)); // deep copy on load
+const SOUND_TEMPLATE_VERSION = 1;
+
+// Keep the workbook order and retain equipment already used by saved plans.
+function arrangeSoundInventory(includeMissing) {
+  const remaining = new Map(AREAS.sonido.data.map(category => [category.cat, category]));
+  const arranged = [];
+  for (const template of DEFAULT_AREAS.sonido.data) {
+    const saved = remaining.get(template.cat);
+    if (!saved && !includeMissing) continue;
+    const items = includeMissing
+      ? [...new Set([...template.items, ...(saved?.items || [])])]
+      : [...saved.items];
+    const order = new Map(template.items.map((item, index) => [item, index]));
+    items.sort((a, b) => (order.get(a) ?? Number.MAX_SAFE_INTEGER) - (order.get(b) ?? Number.MAX_SAFE_INTEGER));
+    arranged.push({ cat: template.cat, items });
+    remaining.delete(template.cat);
+  }
+  AREAS.sonido.data = [...arranged, ...remaining.values()];
+}
 let inventoryOnline = false;
 let combosOnline = false;
 let inventoryCategoryIds = new Map();
@@ -4780,6 +4766,7 @@ function applyOnlineInventory(categories, items) {
       return { cat: cat.name, items: categoryItems.map(item => item.name) };
     });
   }
+  arrangeSoundInventory(false);
   saveCustomInventory();
 }
 
@@ -4862,6 +4849,7 @@ function loadCustomInventory() {
     for (const key of Object.keys(AREAS)) {
       if (saved[key]) AREAS[key].data = saved[key];
     }
+    arrangeSoundInventory(saved._soundTemplateVersion !== SOUND_TEMPLATE_VERSION);
   } catch(e) {}
 }
 
@@ -4956,6 +4944,7 @@ function migrateLegacyVmixQuantities() {
 function saveCustomInventory() {
   const toSave = {};
   for (const key of Object.keys(AREAS)) toSave[key] = AREAS[key].data;
+  toSave._soundTemplateVersion = SOUND_TEMPLATE_VERSION;
   try { localStorage.setItem('cr_inventory', JSON.stringify(toSave)); } catch(e) {}
 }
 
@@ -5700,7 +5689,7 @@ function duplicateStoredEvent(record) {
     bultoCounter = 0;
   }
 
-  eventId = createEventId(); agendaEventKey = '';
+  eventId = createEventId();
   currentSalaId = salas[0].id;
   document.getElementById('remito-numero').value = '';
   currentArea = 'cctv';
