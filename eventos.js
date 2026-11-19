@@ -29,7 +29,7 @@ function renderEventDetails() {
     </section>
     <section class="event-detail-section"><h3>Transportes asignados</h3>${!transportStore.online ? '<p class="muted">Transporte sin actualizar: mostrando la copia disponible.</p>' : ''}
       ${trips.map(row => {
-        const stops = row.stops.filter(stop => stop.event?.key === group.key);
+        const stops = row.stops.filter(stop => L.stopEvents(stop).some(event => event.key === group.key));
         return `<article class="event-detail-transport"><h4>🚚 ${escape(row.truck_type || 'Camión sin asignar')}</h4><dl class="event-detail-info">
           <dt>Chofer</dt><dd>${escape(row.driver || 'Sin asignar')}</dd><dt>Horario de carga</dt><dd>${escape(L.dateTimeLabel(row.loading_at))}</dd>
           <dt>Horario de salida</dt><dd>${escape(L.dateTimeLabel(row.departure_at))}</dd><dt>Desde</dt><dd>${escape(row.origin || 'Sin lugar de salida')}</dd>
@@ -152,7 +152,7 @@ function renderEventCalendar(groups) {
           const trips = (transports.get(group.key) || []).filter(row => row.departure_at.slice(0, 10) === day);
           const timeLabel = value => !value ? 'Sin horario' : value.slice(0, 10) === day ? value.slice(11, 16) : L.dateTimeLabel(value);
           const tripDetails = trips.map(row => {
-            const stops = row.stops.filter(stop => stop.event?.key === group.key);
+            const stops = row.stops.filter(stop => L.stopEvents(stop).some(event => event.key === group.key));
             const arrivals = stops.map(stop => timeLabel(stop.eta) + (stops.length > 1 ? ` (${stop.destination})` : '')).join(' / ');
             return [['Horario de carga', timeLabel(row.loading_at)], ['Horario de salida', timeLabel(row.departure_at)],
               ['Horario de llegada', arrivals || 'Sin horario'], ['Camión', row.truck_type || 'Sin asignar'], ['Chofer', row.driver || 'Sin asignar']];
@@ -196,7 +196,7 @@ function renderEvents() {
     return (!from || (end && end >= from)) && (!until || (start && start <= until)) && (!query || text.includes(query));
   });
   renderEventCalendar(groups);
-  const pending = groups.filter(group => !group.expired).sort((a, b) =>
+  const pending = groups.filter(group => group.end && !group.expired).sort((a, b) =>
     (a.end || '9999-12-31').localeCompare(b.end || '9999-12-31') ||
     (a.start || '9999-12-31').localeCompare(b.start || '9999-12-31') ||
     a.order.localeCompare(b.order, 'es', { numeric: true }));
