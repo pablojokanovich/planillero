@@ -2200,6 +2200,8 @@
 
     <div class="manual-remito-fields">
       <label>NRO. DE REMITO<input id="remito-numero" type="text" autocomplete="off" oninput="saveState()"></label>
+      <label>DIRECCIÓN DEL REMITO<select id="remito-sede" onchange="updateRemitoAddress(false)"><option value="baires">Congress Baires</option><option value="neuquen">Congress Neuquen</option><option value="otra">Otra</option></select></label>
+      <label id="remito-otra-field" hidden>OTRA DIRECCIÓN<input id="remito-direccion-otra" type="text" maxlength="350" oninput="updateRemitoAddress(false)"></label>
     </div>
     <div class="bultos-layout">
       <div class="bultos-panel">
@@ -2242,6 +2244,8 @@
       <label>LOCACIÓN<input id="manual-remito-locacion" type="text" oninput="updateManualRemitoField('locacion', this.value)"></label>
       <label>FECHA<input id="manual-remito-fecha" type="date" oninput="updateManualRemitoField('fecha', this.value)"></label>
       <label>NRO. DE REMITO<input id="manual-remito-numero" type="text" autocomplete="off" oninput="updateManualRemitoField('numero', this.value)"></label>
+      <label>DIRECCIÓN DEL REMITO<select id="manual-remito-sede" onchange="updateRemitoAddress(true)"><option value="baires">Congress Baires</option><option value="neuquen">Congress Neuquen</option><option value="otra">Otra</option></select></label>
+      <label id="manual-remito-otra-field" hidden>OTRA DIRECCIÓN<input id="manual-remito-direccion-otra" type="text" maxlength="350" oninput="updateRemitoAddress(true)"></label>
     </div>
     <div class="bultos-panel-header">
       <div class="bultos-panel-title">BULTOS</div>
@@ -3069,6 +3073,7 @@ function saveState() {
     },
     salas, salaCounter, currentSalaId, currentArea, quantities, observations, bultos, bultoCounter,
     remitoNumero: document.getElementById('remito-numero').value,
+    remitoDireccion: readRemitoAddress('remito'),
     archiveRemitoItems
   };
   try { plannerDraftStorage().setItem(plannerDraftKey(), JSON.stringify(state)); } catch(e) {}
@@ -3094,6 +3099,7 @@ function loadState() {
       if (!category.items.includes(item.equipment)) category.items.push(item.equipment);
     }
     document.getElementById('remito-numero').value = state.remitoNumero || '';
+    restoreRemitoAddress('remito', state.remitoDireccion);
     ['os','evento','lugar','armado','desarme','lider','notas'].forEach(field => {
       const input = document.getElementById(`ev-${field}`);
       if (input) input.value = ev[field] || '';
@@ -3136,6 +3142,7 @@ function getEventSnapshot() {
     bultos: JSON.parse(JSON.stringify(bultos)),
     bultoCounter,
     remitoNumero: document.getElementById('remito-numero').value,
+    remitoDireccion: readRemitoAddress('remito'),
   };
 }
 
@@ -3177,6 +3184,7 @@ function clearAll() {
   document.querySelectorAll('input[type="text"], input[type="date"]').forEach(i => {
     if (!i.closest('#panel-remito-manual')) i.value = '';
   });
+  restoreRemitoAddress('remito');
   document.getElementById('header-info').textContent = 'LISTADO OPERATIVO';
   document.getElementById('sala-contents').innerHTML = '';
   addSala('SALA A', false);
@@ -3709,10 +3717,46 @@ function renderManualEquipmentCatalog() {
   }
 }
 
+function readRemitoAddress(prefix) {
+  return {
+    sede: document.getElementById(`${prefix}-sede`).value,
+    otra: document.getElementById(`${prefix}-direccion-otra`).value
+  };
+}
+
+function restoreRemitoAddress(prefix, saved) {
+  const sede = ['baires', 'neuquen', 'otra'].includes(saved?.sede) ? saved.sede : 'baires';
+  document.getElementById(`${prefix}-sede`).value = sede;
+  document.getElementById(`${prefix}-direccion-otra`).value = String(saved?.otra || '');
+  document.getElementById(`${prefix}-otra-field`).hidden = sede !== 'otra';
+}
+
+function updateRemitoAddress(manual) {
+  const prefix = manual ? 'manual-remito' : 'remito';
+  const direccion = readRemitoAddress(prefix);
+  document.getElementById(`${prefix}-otra-field`).hidden = direccion.sede !== 'otra';
+  if (manual) {
+    manualRemito.direccion = direccion;
+    saveManualRemito();
+  } else saveState();
+}
+
+function validateRemitoAddress(manual) {
+  const prefix = manual ? 'manual-remito' : 'remito';
+  const direccion = readRemitoAddress(prefix);
+  if (direccion.sede === 'otra' && !direccion.otra.trim()) {
+    showToast('Completá la dirección del remito.');
+    document.getElementById(`${prefix}-direccion-otra`).focus();
+    return false;
+  }
+  return true;
+}
+
 function createManualRemito() {
   const now = new Date();
   return {
     evento: '', locacion: '', numero: '', area: '',
+    direccion: { sede: 'baires', otra: '' },
     fecha: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
     bultos: [{ name: 'BULTO 1', items: [{ name: '', qty: 1 }] }]
   };
@@ -3735,6 +3779,7 @@ function openManualRemito() {
           evento: String(saved.evento || saved.cliente || ''), locacion: String(saved.locacion || ''),
           fecha: String(saved.fecha || createManualRemito().fecha),
           numero: String(saved.numero || ''),
+          direccion: saved.direccion || { sede: 'baires', otra: '' },
           area: Object.hasOwn(AREAS, saved.area) ? saved.area : '',
           bultos: saved.bultos.filter(bulto => bulto && Array.isArray(bulto.items)).map((bulto, index) => ({
             name: String(bulto.name || `BULTO ${index + 1}`),
@@ -3755,6 +3800,7 @@ function openManualRemito() {
   const areaSelect = document.getElementById('manual-remito-area');
   areaSelect.replaceChildren(new Option('Elegir área', ''), ...Object.entries(AREAS).map(([key, area]) => new Option(area.label, key)));
   areaSelect.value = manualRemito.area || '';
+  restoreRemitoAddress('manual-remito', manualRemito.direccion);
   renderManualBultos();
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
@@ -3848,6 +3894,7 @@ function resetManualRemito() {
 }
 
 function printManualRemito() {
+  if (!validateRemitoAddress(true)) return;
   if (!manualRemito.fecha) {
     showToast('Completá la fecha del remito.');
     document.getElementById('manual-remito-fecha').focus();
@@ -3880,6 +3927,10 @@ function buildRemitoPage(manualData = null) {
   if (!manualData) normalizeBultos();
   const ev = manualData || getEventData();
   const remitoNumero = manualData ? manualData.numero : document.getElementById('remito-numero').value;
+  const direccion = manualData?.direccion || (manualData ? { sede: 'baires' } : readRemitoAddress('remito'));
+  let addressLines = ['Antonio Beruti 1638', 'B1604 Florida Oeste'];
+  if (direccion.sede === 'neuquen') addressLines = ['Río Negro 465 Q8302 Neuquén'];
+  if (direccion.sede === 'otra') addressLines = [String(direccion.otra || '').trim()];
   const now = new Date();
   const dateStr = manualData?.fecha ? manualData.fecha.split('-').reverse().join('/') : `${String(now.getDate()).padStart(2,'0')}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getFullYear()).slice(-2)}`;
   const rowsByKey = manualData ? {} : Object.fromEntries(getAssignedEquipmentRows().map(row => [row.sourceKey, row]));
@@ -3910,7 +3961,7 @@ function buildRemitoPage(manualData = null) {
     <div class="remito-top">
       <div class="remito-logo-row">
         ${logoSrc ? `<img class="remito-logo-mark" src="${logoSrc}" alt="Punto Baires">` : '<div class="pdf-logo">Punto Baires</div>'}
-        <div class="remito-company"><b>Punto Baires</b><br>Antonio Beruti 1638<br>B1604 Florida Oeste</div>
+        <div class="remito-company"><b>Punto Baires</b><br>${addressLines.map(htmlEscape).join('<br>')}</div>
       </div>
       <div>
         <div class="remito-kind">REMITO DOCUMENTO NO VALIDO COMO FACTURA</div>
@@ -3958,6 +4009,7 @@ function buildRemitoPage(manualData = null) {
 }
 
 function printRemito() {
+  if (!validateRemitoAddress(false)) return;
   normalizeBultos();
   if (!bultos.some(bulto => bulto.items?.length)) {
     showToast('Armá al menos un bulto antes de imprimir el remito.');
@@ -5692,6 +5744,7 @@ function duplicateStoredEvent(record) {
   eventId = createEventId();
   currentSalaId = salas[0].id;
   document.getElementById('remito-numero').value = '';
+  restoreRemitoAddress('remito', snapshot?.remitoDireccion);
   currentArea = 'cctv';
   migrateLegacyVmixQuantities();
   document.getElementById('sala-contents').replaceChildren();

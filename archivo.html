@@ -873,6 +873,7 @@ function openEditedSnapshotInPlanner() {
     eventId: snapshot.event_id || `archivo-${pendingEdit.id}`,
     ev: snapshot.ev || {},
     remitoNumero: snapshot.remitoNumero || '',
+    remitoDireccion: snapshot.remitoDireccion || { sede: 'baires', otra: '' },
     salas: Array.isArray(snapshot.salas) ? snapshot.salas : [],
     salaCounter: Number(snapshot.salaCounter) || (Array.isArray(snapshot.salas) ? snapshot.salas.length : 0),
     currentSalaId: snapshot.currentSalaId || snapshot.salas?.[0]?.id || null,
@@ -1061,7 +1062,7 @@ async function openArchivedRemito(doc, button) {
         desarme: doc.desarme || '', lider: doc.lider || '' },
       salas: rooms, salaCounter: rooms.length, currentSalaId: rooms[0].id, currentArea: 'cctv',
       quantities, observations, bultos: snapshot?.bultos || [], bultoCounter: snapshot?.bultoCounter || 0,
-      remitoNumero: '', archiveRemitoItems: items
+      remitoNumero: '', remitoDireccion: snapshot?.remitoDireccion || { sede: 'baires', otra: '' }, archiveRemitoItems: items
     };
     sessionStorage.setItem('cr_remito_archivo_planilla', JSON.stringify(state));
     window.location.href = 'planillero.html?remitoArchivo=1';
