@@ -58,12 +58,15 @@ revoke all on function public.consume_app_login_attempt(text, integer) from publ
 grant execute on function public.consume_app_login_attempt(text, integer) to service_role;
 
 create or replace view public.app_calendar_departures with (security_barrier = true) as
-select id, loading_at, departure_at, origin, truck_type, stops, deleted, created_at
+select id, loading_at, departure_at, origin, truck_type, stops, deleted, created_at, driver
 from public.logistics_departures
 where not deleted and public.app_access_role() in ('full', 'calendar');
 create or replace view public.app_calendar_events with (security_barrier = true) as
 select id, os, lugar, sala, area, armado, desarme, created_at,
-  jsonb_build_object('event_id', event_data->>'event_id', 'ev', jsonb_build_object('evento', event_data->'ev'->>'evento')) as event_data
+  jsonb_build_object('event_id', event_data->>'event_id', 'ev', jsonb_build_object('evento', event_data->'ev'->>'evento'),
+    'document_type', event_data->'document_type', 'bultos', event_data->'bultos',
+    'remito', event_data->'remito', 'previous_versions', event_data->'previous_versions') as event_data,
+  filename, storage_path
 from public.pdf_documents where public.app_access_role() in ('full', 'calendar');
 revoke all on public.app_calendar_departures, public.app_calendar_events from public, anon;
 grant select on public.app_calendar_departures, public.app_calendar_events to authenticated;

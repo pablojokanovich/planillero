@@ -1,0 +1,38 @@
+ACTUALIZACIÓN DE PLANILLERO
+
+Subí los archivos de este paquete a la raíz del repositorio de GitHub,
+reemplazando los anteriores. Incluí también los tres archivos nuevos:
+app-ui.css, app-ui.js y document-workflow.js.
+Cuando Vercel termine de publicar, recargá la página con Ctrl + F5.
+
+CAMBIOS
+
+1. Botones principales y ventanas con tamaños y presentación comunes.
+   Las ventanas de edición se pueden cerrar con Escape y recorrer con Tab.
+
+2. Un aviso distingue el borrador de este navegador del PDF guardado online.
+   Si falla una carga aparece Reintentar. Esta opción conserva la carga
+   mientras la página permanece abierta. El archivo de planillas y los
+   calendarios mantienen la última copia disponible cuando falla la conexión.
+
+3. En Eventos cargados, buscá por orden o nombre y abrí el resultado.
+   La ficha reúne planillas por área y sala, bultos guardados, remitos,
+   PDFs anteriores y camiones asignados. También permite iniciar un remito
+   con los datos del evento precargados.
+
+   Los remitos que se impriman con esta versión se guardan online junto
+   con sus bultos. El generador manual incorpora Número de orden opcional
+   para vincularlos al evento. Los remitos impresos con versiones anteriores
+   no se incorporan automáticamente.
+
+6. Si ya existe una planilla con la misma orden, área y sala, se puede
+   reemplazar o conservar ambas versiones. Se ignoran las mayúsculas y el
+   prefijo 2026- de la orden. El reemplazo conserva acceso al PDF anterior
+   desde la ficha del evento.
+
+El reemplazo utiliza el mismo permiso de edición que EDITAR en Planillas
+hechas. Si ese permiso falta en la base, se mostrará el error de guardado.
+
+Verificación: recorridos de escritorio y celular, duplicados, reintentos,
+archivo sin conexión y guardado de metadatos. Las pruebas de escritura
+usaron un servidor simulado para no modificar los datos de la empresa.

@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es" data-access-pending="true">
 <head>
+<link rel="stylesheet" href="app-ui.css">
+<script src="app-ui.js"></script>
 <meta charset="UTF-8">
 <link rel="icon" href="favicon.ico?v=20261106-2" sizes="16x16 32x32 48x48" type="image/x-icon">
 <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAABuklEQVR4nOyWS0sCURTHj3dUfAwGKhYtSs1VkO0sCYUWbdq4ahURtGlREK2KICqiQBdBXyBoIVFfwA8QmOAmaRs9iEQwX6mjkzbTTItJ0nkrQfhfnZn53/vj3HvOvaPNgAl6KQQ9Vh+gEHDPvnbqF0J6D2CzIcMSG3TyiEvDW0WRuD2QoV4Sdfuy0QioEMnOn4N8aXm/lIuAD2lwIxs3SaqSAUXqnMGWHoZpkZFpDYQ/QCHALa35Hghxj1bueLfMxhcCnOpAvboMQDYrUBRVKEoCbDRAFhtzOa3Ja2g231zjdK3WbQBCA9EzJgO6WKJJknstBJC1n/jejs4/xQTv65vMKv1wQaksFgu74t/SzfjNu9tMUL+4qkcvW21CfdBeplxOZrM5lUo5qkRuchowZLtLYqMjn0/POa+PLldahyisIoIgSJLEPGN4+BDZbczsQNOlxZVfs4OaTg4Gg7FYjHus7B9VD47bbUIAviriMstGTkxrq0zQiCfygbnWvZUE4DtquPweEW67vUGDjtyEj9mAjma1hx1bSAYD9Zrm82hBnahcXtjwXy99LwWikuIBoUu/S+r/2f094AsAAP//vVNcpwAAAAZJREFUAwBlC5ECMJtZyQAAAABJRU5ErkJggg==" sizes="32x32" type="image/png">
@@ -14,6 +16,7 @@
 <script src="supabase-config.js"></script>
 <link rel="stylesheet" href="acceso.css">
 <script src="acceso.js"></script>
+<script src="document-workflow.js"></script>
 <style>
   :root {
     --red: #E8000A;
@@ -983,7 +986,7 @@
   }
   .bulto-auto-btn:hover { border-color: var(--red); background: var(--red-glow); }
   .bultos-empty { padding: 18px; color: var(--gray-500); font-family: var(--font-mono); font-size: 12px; text-align: center; }
-  body.manual-remito-mode .main-wrapper > :not(#panel-remito-manual) { display: none !important; }
+  body.manual-remito-mode .main-wrapper > :not(#panel-remito-manual):not(.app-save-status) { display: none !important; }
   .manual-remito-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin-bottom: 24px; }
   .manual-remito-fields label { display: grid; gap: 8px; font-size: 12px; }
   .manual-remito-fields input,
@@ -2240,6 +2243,7 @@
     <span class="red-line"></span>
     <div class="manual-remito-fields">
       <label>ÁREA DEL REMITO<select id="manual-remito-area" aria-label="Área del remito" onchange="setManualRemitoArea(this.value)"></select></label>
+      <label>NÚMERO DE ORDEN (OPCIONAL)<input id="manual-remito-os" type="text" autocomplete="off" oninput="updateManualRemitoField('os', this.value)"></label>
       <label>NOMBRE DE EVENTO<input id="manual-remito-evento" type="text" oninput="updateManualRemitoField('evento', this.value)"></label>
       <label>LOCACIÓN<input id="manual-remito-locacion" type="text" oninput="updateManualRemitoField('locacion', this.value)"></label>
       <label>FECHA<input id="manual-remito-fecha" type="date" oninput="updateManualRemitoField('fecha', this.value)"></label>
@@ -3076,7 +3080,12 @@ function saveState() {
     remitoDireccion: readRemitoAddress('remito'),
     archiveRemitoItems
   };
-  try { plannerDraftStorage().setItem(plannerDraftKey(), JSON.stringify(state)); } catch(e) {}
+  try {
+    plannerDraftStorage().setItem(plannerDraftKey(), JSON.stringify(state));
+    window.AppUI.status('borrador', 'local', 'Borrador guardado en este navegador.');
+  } catch (error) {
+    window.AppUI.status('borrador', 'error', 'No se pudo guardar el borrador en este navegador.', saveState);
+  }
 }
 
 function loadState() {
@@ -3755,7 +3764,7 @@ function validateRemitoAddress(manual) {
 function createManualRemito() {
   const now = new Date();
   return {
-    evento: '', locacion: '', numero: '', area: '',
+    event_id: `remito-${crypto.randomUUID()}`, os: '', evento: '', locacion: '', numero: '', area: '',
     direccion: { sede: 'baires', otra: '' },
     fecha: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`,
     bultos: [{ name: 'BULTO 1', items: [{ name: '', qty: 1 }] }]
@@ -3765,12 +3774,26 @@ function createManualRemito() {
 function saveManualRemito() {
   try {
     localStorage.setItem('cr_remito_manual', JSON.stringify(manualRemito));
+    window.AppUI.status('borrador', 'local', 'Remito guardado en este navegador.');
   } catch (error) {
     showToast('No se pudo guardar el borrador del remito en este navegador.');
+    window.AppUI.status('borrador', 'error', 'No se pudo guardar el borrador del remito.', saveManualRemito);
   }
 }
 
 function openManualRemito() {
+  if (new URLSearchParams(location.search).has('desdeEvento')) {
+    try {
+      const prefill = JSON.parse(sessionStorage.getItem('cr_remito_event_prefill_v1'));
+      if (prefill) {
+        const previous = localStorage.getItem('cr_remito_manual');
+        if (previous) localStorage.setItem('cr_remito_manual_anterior', previous);
+        manualRemito = { ...createManualRemito(), ...(prefill.event_id ? { event_id: prefill.event_id } : {}), os: String(prefill.os || ''), evento: String(prefill.evento || ''), locacion: String(prefill.locacion || '') };
+        sessionStorage.removeItem('cr_remito_event_prefill_v1');
+        saveManualRemito();
+      }
+    } catch (error) { showToast('No se pudo precargar el evento. Podés completar los datos manualmente.'); }
+  }
   if (!manualRemito) {
     try {
       const saved = JSON.parse(localStorage.getItem('cr_remito_manual'));
@@ -3778,7 +3801,7 @@ function openManualRemito() {
         manualRemito = {
           evento: String(saved.evento || saved.cliente || ''), locacion: String(saved.locacion || ''),
           fecha: String(saved.fecha || createManualRemito().fecha),
-          numero: String(saved.numero || ''),
+          event_id: saved.event_id || createManualRemito().event_id, os: String(saved.os || ''), numero: String(saved.numero || ''),
           direccion: saved.direccion || { sede: 'baires', otra: '' },
           area: Object.hasOwn(AREAS, saved.area) ? saved.area : '',
           bultos: saved.bultos.filter(bulto => bulto && Array.isArray(bulto.items)).map((bulto, index) => ({
@@ -3794,7 +3817,7 @@ function openManualRemito() {
   document.querySelectorAll('[data-planner-view]').forEach(link => link.classList.toggle('active', link.dataset.plannerView === 'remito'));
   document.getElementById('panel-remito-manual').classList.add('active');
   document.getElementById('float-summary').style.display = 'none';
-  ['evento', 'locacion', 'fecha', 'numero'].forEach(field => {
+  ['os', 'evento', 'locacion', 'fecha', 'numero'].forEach(field => {
     document.getElementById(`manual-remito-${field}`).value = manualRemito[field];
   });
   const areaSelect = document.getElementById('manual-remito-area');
@@ -3920,6 +3943,7 @@ function printManualRemito() {
   }
   const pdfEl = document.getElementById('pdf-pages');
   pdfEl.innerHTML = buildRemitoPage({ ...manualRemito, bultos: printBultos });
+  saveRemitoPdf(pdfEl, { ...manualRemito, bultos: printBultos });
   printElementAndRestore(pdfEl, `Remito_${manualRemito.fecha}`);
 }
 
@@ -4018,7 +4042,20 @@ function printRemito() {
   const pdfEl = document.getElementById('pdf-pages');
   const ev = getEventData();
   pdfEl.innerHTML = buildRemitoPage();
+  const source = Object.fromEntries(getAssignedEquipmentRows().map(row => [row.sourceKey, row]));
+  saveRemitoPdf(pdfEl, { os: ev.os, evento: ev.evento, locacion: ev.lugar,
+    fecha: createManualRemito().fecha, numero: document.getElementById('remito-numero').value,
+    direccion: readRemitoAddress('remito'),
+    bultos: bultos.map(bulto => ({ name: bulto.name, items: bulto.items.filter(item => source[item.sourceKey]).map(item => ({ name: source[item.sourceKey].name, qty: item.qty })) })) }, ev);
   printElementAndRestore(pdfEl, `Remito_${(ev.os || 'SinOS').replace(/\W+/g, '-')}`);
+}
+
+function saveRemitoPdf(pdfEl, data, ev = {}) {
+  generateAndUploadPdf(pdfEl, `Remito_${data.numero || data.fecha}`, {
+    os: data.os || '', lugar: data.locacion || '', area: 'REMITO', sala: '',
+    armado: ev.armado || '', desarme: ev.desarme || '', total_units: data.bultos.reduce((sum,b) => sum + b.items.reduce((n,item) => n + Number(item.qty),0),0),
+    event_data: { document_type: 'remito', event_id: data.event_id || eventId, ev: { ...ev, os: data.os, evento: data.evento, lugar: data.locacion }, remito: JSON.parse(JSON.stringify(data)) }
+  });
 }
 
 function printElementAndRestore(printEl, title) {
@@ -4293,54 +4330,6 @@ const {
   DEPOSIT_CHECKLISTS_TABLE, DEPOSIT_CHECKLIST_ITEMS_TABLE
 } = window.PDF_ARCHIVE_CONFIG;
 
-function buildUniquePdfPath(filename) {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const unique = (window.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`);
-  return `${year}/${month}/${unique}_${filename}.pdf`;
-}
-
-function getPublicPdfUrl(path) {
-  const encodedPath = path.split('/').map(encodeURIComponent).join('/');
-  return `${SUPABASE_URL}/storage/v1/object/public/${SUPABASE_BUCKET}/${encodedPath}`;
-}
-
-async function uploadPdfToSupabase(pdfBlob, filename) {
-  const path = buildUniquePdfPath(filename);
-  const res = await fetch(`${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}/${path}`, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/pdf',
-      'x-upsert': 'false',
-    },
-    body: pdfBlob,
-  });
-  if (!res.ok) {
-    const err = await res.text();
-    throw new Error(err);
-  }
-  return { path, publicUrl: getPublicPdfUrl(path) };
-}
-
-async function savePdfMetadata(metadata) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}`, {
-    method: 'POST',
-    headers: {
-      'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
-      'Content-Type': 'application/json',
-      'Prefer': 'return=representation',
-    },
-    body: JSON.stringify(stripInternalMetadata(metadata)),
-  });
-  if (!res.ok) throw new Error(await res.text());
-  const rows = await res.json();
-  return rows[0];
-}
-
 function stripInternalMetadata(metadata) {
   const clean = { ...metadata };
   if (clean.event_data && Array.isArray(metadata.__deposit_items)) {
@@ -4432,6 +4421,10 @@ function showPrintAndRestore(pdfEl, filename, metadata) {
 }
 
 async function generateAndUploadPdf(pdfEl, filename, metadata) {
+  let rendered = false;
+  const captured = pdfEl.cloneNode(true);
+  const frames = new Set();
+  window.AppUI.status('pdf', 'saving', 'Generando PDF para el registro compartido…');
   try {
     // Hide toast during capture so it doesn't appear in the PDF
     const toastEl = document.getElementById('toast');
@@ -4445,7 +4438,7 @@ async function generateAndUploadPdf(pdfEl, filename, metadata) {
     const SCALE   = 2;
 
     // Collect the HTML of all pdf-pages
-    const pages = Array.from(pdfEl.querySelectorAll('.pdf-page'));
+    const pages = Array.from(captured.querySelectorAll('.pdf-page, .remito-page'));
     if (!pages.length) throw new Error('No hay páginas para generar');
 
     // Build print-ready CSS (copy of @media print rules, no media query)
@@ -4486,17 +4479,18 @@ async function generateAndUploadPdf(pdfEl, filename, metadata) {
       const iframe = document.createElement('iframe');
       iframe.style.cssText = `position:fixed;left:-9999px;top:0;width:${A4_W_PX}px;height:${A4_H_PX}px;border:none;background:white;`;
       document.body.appendChild(iframe);
+      frames.add(iframe);
 
       // Write page content into iframe
       const iDoc = iframe.contentDocument || iframe.contentWindow.document;
       iDoc.open();
-      iDoc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${printCSS}</style></head><body>${pages[i].outerHTML}</body></html>`);
+      iDoc.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><style>${pages[i].classList.contains('remito-page') ? [...document.querySelectorAll('style')].map(style => style.textContent).join('\n') + '\nbody{background:#fff!important;color:#000;width:794px;margin:0} .remito-page{margin:0!important}' : printCSS}</style></head><body>${pages[i].outerHTML}</body></html>`);
       iDoc.close();
 
       // Wait for fonts/images to load
       await new Promise(r => setTimeout(r, 600));
 
-      const pageEl = iDoc.querySelector('.pdf-page');
+      const pageEl = iDoc.querySelector('.pdf-page, .remito-page');
       const realH = pageEl ? pageEl.scrollHeight : A4_H_PX;
       iframe.style.height = realH + 'px';
 
@@ -4512,6 +4506,7 @@ async function generateAndUploadPdf(pdfEl, filename, metadata) {
       });
 
       document.body.removeChild(iframe);
+      frames.delete(iframe);
 
       const imgData = canvas.toDataURL('image/jpeg', 0.95);
 
@@ -4561,30 +4556,25 @@ async function generateAndUploadPdf(pdfEl, filename, metadata) {
     }
 
     const pdfBlob = pdf.output('blob');
-    const uploaded = await uploadPdfToSupabase(pdfBlob, filename);
-    const savedPdf = await savePdfMetadata({
-      ...metadata,
-      filename: `${filename}.pdf`,
-      storage_path: uploaded.path,
-      public_url: uploaded.publicUrl,
-      file_size: pdfBlob.size,
-    });
-    let depositUrl = '';
-    let depositError = '';
-    try {
-      const checklist = await createDepositChecklist(savedPdf, metadata);
-      if (checklist) depositUrl = buildDepositUrl(checklist);
-    } catch (checklistError) {
-      console.error('Deposit checklist error:', checklistError);
-      depositError = 'PDF guardado, pero no se pudo crear Depósito. Podés reintentarlo desde Planillas Hechas.';
-    }
+    rendered = true;
+    const attempt = {};
+    const persist = async () => {
+      const saved = await window.DocumentWorkflow.save({ blob: pdfBlob, filename: `${filename}.pdf`, metadata: stripInternalMetadata(metadata) }, attempt);
+      try { await createDepositChecklist(saved, metadata); }
+      catch (error) { window.AppUI.status('deposito', 'pending', 'PDF guardado online. Falta crear Depósito.', async () => { await createDepositChecklist(saved, metadata); window.AppUI.status('deposito', 'saved', 'Depósito creado online.'); }); }
+      return saved;
+    };
+    attempt.retry = persist;
+    await persist();
     toastEl.style.display = prevDisplay;
-    showToast(depositError || (depositUrl ? `PDF online y deposito creado: ${depositUrl}` : 'PDF guardado y disponible online'));
+    showToast('PDF guardado y disponible online');
   } catch (e) {
+    frames.forEach(frame => frame.remove());
     console.error('Supabase upload error:', e);
     const toastEl2 = document.getElementById('toast');
     toastEl2.style.display = '';
-    showToast('⚠ No se pudo guardar en base de datos');
+    if (!rendered) window.AppUI.status('pdf', 'error', 'No se pudo generar el PDF para guardar online.', () => generateAndUploadPdf(captured, filename, metadata));
+    showToast(e.message === 'La carga del PDF fue cancelada.' ? e.message : 'El PDF no se guardó online. Revisá el aviso de guardado.');
   }
 }
 

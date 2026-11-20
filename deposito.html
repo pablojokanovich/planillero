@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es" data-access-pending="true">
 <head>
+<link rel="stylesheet" href="app-ui.css">
+<script src="app-ui.js"></script>
 <meta charset="UTF-8">
 <link rel="icon" href="favicon.ico?v=20261106-2" sizes="16x16 32x32 48x48" type="image/x-icon">
 <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAABuklEQVR4nOyWS0sCURTHj3dUfAwGKhYtSs1VkO0sCYUWbdq4ahURtGlREK2KICqiQBdBXyBoIVFfwA8QmOAmaRs9iEQwX6mjkzbTTItJ0nkrQfhfnZn53/vj3HvOvaPNgAl6KQQ9Vh+gEHDPvnbqF0J6D2CzIcMSG3TyiEvDW0WRuD2QoV4Sdfuy0QioEMnOn4N8aXm/lIuAD2lwIxs3SaqSAUXqnMGWHoZpkZFpDYQ/QCHALa35Hghxj1bueLfMxhcCnOpAvboMQDYrUBRVKEoCbDRAFhtzOa3Ja2g231zjdK3WbQBCA9EzJgO6WKJJknstBJC1n/jejs4/xQTv65vMKv1wQaksFgu74t/SzfjNu9tMUL+4qkcvW21CfdBeplxOZrM5lUo5qkRuchowZLtLYqMjn0/POa+PLldahyisIoIgSJLEPGN4+BDZbczsQNOlxZVfs4OaTg4Gg7FYjHus7B9VD47bbUIAviriMstGTkxrq0zQiCfygbnWvZUE4DtquPweEW67vUGDjtyEj9mAjma1hx1bSAYD9Zrm82hBnahcXtjwXy99LwWikuIBoUu/S+r/2f094AsAAP//vVNcpwAAAAZJREFUAwBlC5ECMJtZyQAAAABJRU5ErkJggg==" sizes="32x32" type="image/png">
@@ -286,6 +288,7 @@ function queueSave(item) {
 }
 
 async function saveItem(item) {
+  window.AppUI.status(`deposito-${item.id}`, 'saving', 'Guardando control de Depósito…');
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/${DEPOSIT_CHECKLIST_ITEMS_TABLE}?id=eq.${encodeURIComponent(item.id)}&checklist_id=eq.${encodeURIComponent(checklist.id)}`, {
       method: 'PATCH',
@@ -293,9 +296,11 @@ async function saveItem(item) {
       body: JSON.stringify({ checked: item.checked, checked_at: item.checked_at }),
     });
     if (!res.ok) throw new Error(await res.text());
+    window.AppUI.status(`deposito-${item.id}`, 'saved', 'Control de Depósito guardado online.');
   } catch (error) {
     console.error('No se pudo guardar item:', error);
     setStatus('No se pudo guardar el ultimo cambio. Revisa la conexion y toca de nuevo.', true);
+    window.AppUI.status(`deposito-${item.id}`, 'pending', 'El último cambio de Depósito todavía no se guardó online.', () => saveItem(item));
   }
 }
 

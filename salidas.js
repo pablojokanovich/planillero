@@ -19,9 +19,9 @@ try {
   if (Array.isArray(cached)) eventGroups = cached;
 } catch (error) {}
 
-function eventOptions(stop) {
-  const current = stop.event;
-  const options = eventGroups.filter(group => !group.expired || group.key === current?.key);
+function eventOptions(current, stop) {
+  const selected = new Set(L.stopEvents(stop).map(event => event.key));
+  const options = eventGroups.filter(group => (!group.expired || group.key === current?.key) && (!selected.has(group.key) || group.key === current?.key));
   if (current?.key && !options.some(group => group.key === current.key)) options.push(current);
   return '<option value="">Sin evento vinculado</option>' + options.map(group =>
     `<option value="${escape(group.key)}" ${group.key === current?.key ? 'selected' : ''}>${escape(L.eventLabel(group))}${group.start ? ` · ${escape(L.dateLabel(group.start))}` : ''}</option>`).join('');
@@ -103,6 +103,9 @@ function showStatus() {
     ? 'Salidas sincronizadas.'
     : `Guardado local en este navegador.${pending ? ` ${pending} cambio(s) pendiente(s) de sincronizar.` : ''} Sin conexión con el registro compartido.`);
   byId('status').classList.toggle('error', Boolean(viewError) || !store.online);
+  window.AppUI.status('salidas', store.online ? 'saved' : pending ? 'pending' : 'offline',
+    store.online ? 'Salidas guardadas online.' : `Salidas guardadas en este navegador. ${pending} cambio(s) pendiente(s). ${window.AppUI.errorMessage(store.error)}`,
+    refreshDepartures);
 }
 
 function renderDrivers(selected = byId('driver').value) {
@@ -170,7 +173,7 @@ function renderDepartures() {
       <div><div class="departure-time">${escape(row.departure_at.slice(11, 16))}</div><div class="muted">Salida</div></div>
       <div><p class="truck-name">${escape(row.truck_type)}</p><p>${escape(row.driver)}</p><p class="muted">Carga: ${escape(L.dateTimeLabel(row.loading_at))}</p></div>
       <div class="departure-route"><p><span class="muted">Desde </span>${escape(row.origin)}</p>
-        <ol class="route">${row.stops.map((stop, index) => `<li><span class="stop-number">${index + 1}.</span><div>${escape(stop.destination)}${stop.address ? `<div class="muted">${escape(stop.address)}</div>` : ''}${stop.event?.key ? `<div class="linked-event-label">${escape(L.eventLabel(stop.event))}</div>` : ''}</div><time>${escape(stop.eta.slice(0, 10) === day ? stop.eta.slice(11, 16) : L.dateTimeLabel(stop.eta))}</time></li>`).join('')}</ol>
+        <ol class="route">${row.stops.map((stop, index) => `<li><span class="stop-number">${index + 1}.</span><div>${escape(stop.destination)}${stop.address ? `<div class="muted">${escape(stop.address)}</div>` : ''}${L.stopEvents(stop).map(event => `<div class="linked-event-label">${escape(L.eventLabel(event))}</div>`).join('')}</div><time>${escape(stop.eta.slice(0, 10) === day ? stop.eta.slice(11, 16) : L.dateTimeLabel(stop.eta))}</time></li>`).join('')}</ol>
         ${row.notes ? `<p class="muted">${escape(row.notes)}</p>` : ''}
       </div>
       <div class="actions"><button class="icon-button" data-action="edit" title="Editar salida" aria-label="Editar salida">${L.icon('pencil', '&#9998;')}</button><button class="icon-button danger" data-action="delete" title="Eliminar salida" aria-label="Eliminar salida">${L.icon('trash-2', '&times;')}</button></div>
@@ -205,6 +208,7 @@ function updateScheduleDays() {
 function renderStops(focusLast = false) {
   const destinations = catalog.list('destination');
   byId('stop-editors').innerHTML = draft.stops.map((stop, index) => {
+    const events = Array.isArray(stop.events) && stop.events.length ? stop.events : [stop.event || null];
     const known = destinations.find(row => L.nameKey(row.name) === L.nameKey(stop.destination));
     const manual = Boolean(stop.manualDestination || (stop.destination && !known));
     return `<div class="stop-editor" data-index="${index}">
@@ -216,7 +220,10 @@ function renderStops(focusLast = false) {
         <option value="__manual__" ${manual ? 'selected' : ''}>Otro destino...</option>
       </select></label>
       <label>Hora de llegada<input data-field="eta" aria-label="Hora de llegada ${index + 1}" type="time" value="${escape(stop.eta)}" required><span class="schedule-day" data-stop-day hidden></span></label>
-      <label class="full">Evento vinculado (opcional)<select data-role="event-choice" aria-label="Evento ${index + 1}">${eventOptions(stop)}</select></label>
+      <fieldset class="full linked-event-picker"><legend>Eventos vinculados (opcional)</legend>
+        ${events.map((current, eventIndex) => `<div class="linked-event-row"><select data-role="event-choice" data-event-index="${eventIndex}" aria-label="${eventIndex === 0 ? `Evento ${index + 1}` : `Evento adicional ${eventIndex + 1} del destino ${index + 1}`}">${eventOptions(current, stop)}</select>${events.length > 1 ? `<button type="button" class="icon-button" data-remove-event="${eventIndex}" aria-label="Quitar evento ${eventIndex + 1} del destino ${index + 1}" title="Quitar evento">×</button>` : ''}</div>`).join('')}
+        <button type="button" class="add-linked-event" data-add-event aria-label="Agregar otro evento al destino ${index + 1}">+ Agregar otro evento</button>
+      </fieldset>
       <label class="full" ${manual ? '' : 'hidden'}>Nombre del destino<input data-field="destination" aria-label="Nombre del destino ${index + 1}" value="${escape(stop.destination)}" ${manual ? 'required' : 'disabled'} maxlength="250"></label>
       <label class="full">Dirección<input data-field="address" aria-label="Dirección ${index + 1}" value="${escape(stop.address || '')}" maxlength="350"></label>
     </div>
@@ -313,9 +320,12 @@ byId('stop-editors').addEventListener('input', event => {
 byId('stop-editors').addEventListener('change', event => {
   if (event.target.dataset.role === 'event-choice') {
     const stop = draft.stops[Number(event.target.closest('.stop-editor').dataset.index)];
-    const group = eventGroups.find(group => group.key === event.target.value);
-    if (group) stop.event = { key: group.key, order: group.order, name: group.name };
-    else if (!event.target.value) delete stop.event;
+    const events = Array.isArray(stop.events) && stop.events.length ? [...stop.events] : [stop.event || null];
+    const group = eventGroups.find(group => group.key === event.target.value) || L.stopEvents(stop).find(group => group.key === event.target.value);
+    events[Number(event.target.dataset.eventIndex)] = group ? { key: group.key, order: group.order, name: group.name } : null;
+    stop.events = events;
+    stop.event = L.stopEvents(stop)[0];
+    renderStops();
     return;
   }
   if (event.target.dataset.role !== 'destination-choice') return;
@@ -332,7 +342,15 @@ byId('stop-editors').addEventListener('click', event => {
   const button = event.target.closest('button');
   if (!button || button.disabled) return;
   const index = Number(button.closest('.stop-editor').dataset.index);
-  if (button.hasAttribute('data-remove')) draft.stops.splice(index, 1);
+  if (button.hasAttribute('data-add-event') || button.hasAttribute('data-remove-event')) {
+    const stop = draft.stops[index];
+    const events = Array.isArray(stop.events) && stop.events.length ? [...stop.events] : [stop.event || null];
+    if (button.hasAttribute('data-add-event')) events.push(null);
+    else events.splice(Number(button.dataset.removeEvent), 1);
+    stop.events = events;
+    stop.event = L.stopEvents(stop)[0];
+  }
+  else if (button.hasAttribute('data-remove')) draft.stops.splice(index, 1);
   else { const other = index + Number(button.dataset.move); [draft.stops[index], draft.stops[other]] = [draft.stops[other], draft.stops[index]]; }
   renderStops();
 });

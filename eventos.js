@@ -12,6 +12,26 @@ let calendarMonth = L.today().slice(0, 7);
 let selectedEvent = '';
 let dialogEvent = null;
 
+function eventBultos(group) {
+  const seen = new Set();
+  const result = [];
+  for (const doc of group.documents) {
+    const saved = L.snapshot(doc.event_data);
+    const key = saved.event_id || doc.id;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    for (const bulto of saved.bultos || []) {
+      const items = (bulto.items || []).filter(item => Number(item.qty) > 0).map(item => ({
+        name: item.name || String(item.sourceKey || '').split('::').slice(3).join('::'), qty: item.qty
+      }));
+      if (items.length) result.push({ name: bulto.name, items });
+    }
+  }
+  return result;
+}
+function bultosHTML(bultos) {
+  return bultos.map(bulto => `<article class="event-bulto"><strong>${escape(bulto.name || 'Bulto')}</strong><ul>${(bulto.items || []).map(item => `<li>${escape(item.qty)} × ${escape(item.name)}</li>`).join('')}</ul></article>`).join('');
+}
 function renderEventDetails() {
   const group = dialogEvent && L.groupEvents(documents).find(group => group.key === dialogEvent.key);
   if (!group) return;
@@ -27,6 +47,14 @@ function renderEventDetails() {
       <div class="table-wrap"><table class="event-detail-table"><thead><tr><th>Área</th><th>Sala</th><th>PDF</th></tr></thead><tbody>${group.documents.map(doc =>
         `<tr><td>${escape(doc.area || '—')}</td><td>${escape(doc.sala || '—')}</td><td><button type="button" class="event-detail-pdf" data-pdf-path="${escape(doc.storage_path || '')}" aria-label="Abrir PDF de ${escape(doc.area || 'área sin informar')}, ${escape(doc.sala || 'sala sin informar')}" ${doc.storage_path ? '' : 'disabled'}>PDF ↗</button></td></tr>`).join('')}</tbody></table></div>
     </section>
+    <section class="event-detail-section"><h3>Bultos de las planillas</h3>${bultosHTML(eventBultos(group)) || '<p class="muted">No hay bultos guardados en las planillas de este evento.</p>'}</section>
+    <section class="event-detail-section"><h3>Remitos</h3>${group.remitos.map(doc => {
+      const remito = L.snapshot(doc.event_data).remito || {};
+      return `<article class="event-bulto"><strong>Remito ${escape(remito.numero || 'sin número')}</strong> · ${escape(L.dateLabel(remito.fecha))}
+        <button type="button" data-pdf-path="${escape(doc.storage_path || '')}" ${doc.storage_path ? '' : 'disabled'}>PDF ↗</button>${bultosHTML(remito.bultos || [])}</article>`;
+    }).join('') || '<p class="muted">No hay remitos guardados online para este evento.</p>'}
+    ${window.AppAccess.isFull() ? '<button type="button" id="event-new-remito" class="primary">Nuevo remito para este evento</button>' : ''}</section>
+    <section class="event-detail-section"><h3>Versiones anteriores</h3>${group.documents.flatMap(doc => (L.snapshot(doc.event_data).previous_versions || []).map(previous => `<p>${escape(previous.filename)} <button type="button" data-pdf-path="${escape(previous.storage_path)}">PDF ↗</button></p>`)).join('') || '<p class="muted">No hay versiones reemplazadas.</p>'}</section>
     <section class="event-detail-section"><h3>Transportes asignados</h3>${!transportStore.online ? '<p class="muted">Transporte sin actualizar: mostrando la copia disponible.</p>' : ''}
       ${trips.map(row => {
         const stops = row.stops.filter(stop => L.stopEvents(stop).some(event => event.key === group.key));
@@ -196,6 +224,10 @@ function renderEvents() {
     return (!from || (end && end >= from)) && (!until || (start && start <= until)) && (!query || text.includes(query));
   });
   renderEventCalendar(groups);
+  const searchResults = byId('event-search-results');
+  searchResults.hidden = !query;
+  searchResults.innerHTML = query ? `<strong>${groups.length} resultado(s) · Abrir ficha del evento</strong>` + (groups.map(group =>
+    `<button type="button" class="event-search-result" data-event-detail="${escape(group.key)}"><span>${escape(L.eventLabel(group))}</span><span>${escape(L.dateLabel(group.start))} → ${escape(L.dateLabel(group.end))}</span></button>`).join('') || '<p>No se encontraron eventos.</p>') : '';
   const pending = groups.filter(group => group.end && !group.expired).sort((a, b) =>
     (a.end || '9999-12-31').localeCompare(b.end || '9999-12-31') ||
     (a.start || '9999-12-31').localeCompare(b.start || '9999-12-31') ||
@@ -225,6 +257,7 @@ async function refreshEvents() {
   loading = true;
   byId('refresh').disabled = true;
   byId('status').textContent = 'Actualizando eventos...';
+  window.AppUI.status('eventos', 'saving', 'Actualizando la ficha de los eventos…');
   try {
     [documents] = await Promise.all([L.fetchEventDocuments(), transportStore.refresh()]);
     lastUpdated = new Date().toISOString();
@@ -233,10 +266,12 @@ async function refreshEvents() {
     byId('status').textContent = cached ? 'Agenda sincronizada con las planillas guardadas.' : 'Agenda sincronizada. No se pudo guardar una copia local.';
     byId('status').classList.toggle('error', !cached);
     if (!transportStore.online) byId('status').textContent += ' No se pudo actualizar el transporte; se muestra la última copia disponible.';
+    window.AppUI.status('eventos', transportStore.online ? 'saved' : 'offline', transportStore.online ? 'Eventos actualizados desde el registro compartido.' : 'Eventos actualizados. Transporte sin conexión: se muestra la copia disponible.', transportStore.online ? null : refreshEvents);
   } catch (error) {
     const date = lastUpdated ? new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', dateStyle: 'short', timeStyle: 'short' }).format(new Date(lastUpdated)) : '';
     byId('status').textContent = date ? `Sin conexión. Mostrando la copia del ${date}.` : 'No se pudo cargar la agenda online. Reintentá con Actualizar.';
     byId('status').classList.add('error');
+    window.AppUI.status('eventos', 'offline', byId('status').textContent, refreshEvents);
   } finally { loading = false; byId('refresh').disabled = false; renderEvents(); }
 }
 
@@ -255,12 +290,26 @@ byId('event-calendar-grid').addEventListener('click', event => {
 for (const id of ['close-event-detail', 'dismiss-event-detail']) byId(id).addEventListener('click', () => byId('event-detail-dialog').close());
 byId('event-detail-assign-truck').addEventListener('click', assignTruckToEvent);
 byId('event-detail-dialog').addEventListener('click', event => {
+  if (event.target.closest('#event-new-remito')) {
+    if (!window.AppAccess.isFull()) return;
+    const group = L.groupEvents(documents).find(group => group.key === dialogEvent?.key);
+    if (!group) return;
+    try {
+      sessionStorage.setItem('cr_remito_event_prefill_v1', JSON.stringify({ os: group.order, event_id: group.key.startsWith('event:') ? group.key.slice(6) : '', evento: group.name, locacion: group.places.join(' / ') }));
+      location.assign('planillero.html?remito=manual&desdeEvento=1');
+    } catch (error) { byId('event-detail-error').hidden = false; byId('event-detail-error').textContent = 'No se pudo preparar el remito. Revisá el almacenamiento del navegador.'; }
+    return;
+  }
   const link = event.target.closest('[data-pdf-path]');
   if (link) { event.preventDefault(); window.AppAccess.openPdf(link.dataset.pdfPath); return; }
   if (event.target === byId('event-detail-dialog')) {
     const bounds = event.target.getBoundingClientRect();
     if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) event.target.close();
   }
+});
+byId('event-search-results').addEventListener('click', event => {
+  const button = event.target.closest('[data-event-detail]');
+  if (button) openEventDetails(button.dataset.eventDetail, selectedDay || L.today());
 });
 byId('event-calendar-grid').addEventListener('keydown', event => {
   const button = event.target.closest('[data-select-day]');

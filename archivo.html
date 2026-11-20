@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="es" data-access-pending="true">
 <head>
+<link rel="stylesheet" href="app-ui.css">
+<script src="app-ui.js"></script>
 <meta charset="UTF-8">
 <link rel="icon" href="favicon.ico?v=20261106-2" sizes="16x16 32x32 48x48" type="image/x-icon">
 <link rel="icon" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAABuklEQVR4nOyWS0sCURTHj3dUfAwGKhYtSs1VkO0sCYUWbdq4ahURtGlREK2KICqiQBdBXyBoIVFfwA8QmOAmaRs9iEQwX6mjkzbTTItJ0nkrQfhfnZn53/vj3HvOvaPNgAl6KQQ9Vh+gEHDPvnbqF0J6D2CzIcMSG3TyiEvDW0WRuD2QoV4Sdfuy0QioEMnOn4N8aXm/lIuAD2lwIxs3SaqSAUXqnMGWHoZpkZFpDYQ/QCHALa35Hghxj1bueLfMxhcCnOpAvboMQDYrUBRVKEoCbDRAFhtzOa3Ja2g231zjdK3WbQBCA9EzJgO6WKJJknstBJC1n/jejs4/xQTv65vMKv1wQaksFgu74t/SzfjNu9tMUL+4qkcvW21CfdBeplxOZrM5lUo5qkRuchowZLtLYqMjn0/POa+PLldahyisIoIgSJLEPGN4+BDZbczsQNOlxZVfs4OaTg4Gg7FYjHus7B9VD47bbUIAviriMstGTkxrq0zQiCfygbnWvZUE4DtquPweEW67vUGDjtyEj9mAjma1hx1bSAYD9Zrm82hBnahcXtjwXy99LwWikuIBoUu/S+r/2f094AsAAP//vVNcpwAAAAZJREFUAwBlC5ECMJtZyQAAAABJRU5ErkJggg==" sizes="32x32" type="image/png">
@@ -11,6 +13,7 @@
 <script src="supabase-config.js"></script>
 <link rel="stylesheet" href="acceso.css">
 <script src="acceso.js"></script>
+<script src="document-workflow.js"></script>
 <script src="logistica.js"></script>
 <style>
   :root {
@@ -352,8 +355,9 @@ function createDocumentRow(doc) {
     action.appendChild(actions);
     return row;
   }
-  const checklist = checklistByPdf.get(doc.id);
   const snapshot = normalizeEventSnapshot(doc.event_data);
+  const isRemito = snapshot?.document_type === 'remito';
+  const checklist = !isRemito && snapshot?.source !== 'external_pdf' ? checklistByPdf.get(doc.id) : null;
   if (checklist) {
     const deposit = document.createElement('a');
     deposit.className = 'pdf-link deposit-link';
@@ -362,7 +366,7 @@ function createDocumentRow(doc) {
     deposit.href = depositUrl(checklist);
     deposit.textContent = 'DEPOSITO';
     actions.appendChild(deposit);
-  } else if (snapshot && snapshot.source !== 'external_pdf') {
+  } else if (!isRemito && snapshot && snapshot.source !== 'external_pdf') {
     const deposit = document.createElement('button');
     deposit.className = 'pdf-link deposit-link';
     deposit.type = 'button';
@@ -383,7 +387,7 @@ function createDocumentRow(doc) {
   remitoButton.textContent = 'GENERAR REMITO';
   remitoButton.addEventListener('click', () => openArchivedRemito(doc, remitoButton));
   actions.append(link);
-  if (checklist || snapshot?.source !== 'external_pdf') actions.append(remitoButton);
+  if (!isRemito && (checklist || snapshot?.source !== 'external_pdf')) actions.append(remitoButton);
   actions.append(editButton, deleteButton);
   action.appendChild(actions);
   return row;
@@ -548,41 +552,16 @@ importForm.addEventListener('submit', async event => {
     if (file.size > 50 * 1024 * 1024) throw new Error('El PDF supera el límite de 50 MB.');
     const armado = fields.get('armado');
     const desarme = fields.get('desarme');
+    const scheduled = armado || desarme || importedOrderHasDates(os);
     if (armado && desarme && desarme < armado) throw new Error('El desarme debe ser posterior o igual al armado.');
-    if (importAttempt?.file !== file) {
-      const now = new Date();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      importAttempt = { file, path: `${now.getFullYear()}/${month}/externa-${window.Logistics.uuid()}.pdf`, uploaded: false };
-    }
-    const { path } = importAttempt;
-    const storageUrl = `${SUPABASE_URL}/storage/v1/object/${SUPABASE_BUCKET}`;
-    if (!importAttempt.uploaded) {
-      const upload = await fetch(`${storageUrl}/${path}`, {
-        method: 'POST',
-        headers: archiveHeaders({ 'Content-Type': 'application/pdf', 'x-upsert': 'false' }),
-        body: file,
-      });
-      if (!upload.ok) {
-        const error = await upload.json().catch(() => ({}));
-        if (upload.status !== 409 && String(error.statusCode) !== '409') {
-          throw new Error('No se pudo subir el PDF. Revisá la conexión y volvé a intentar.');
-        }
-      }
-      importAttempt.uploaded = true;
-    }
+    if (importAttempt?.file !== file) importAttempt = { file, job: {} };
+    importAttempt.job.retry = () => { if (!importModal.open) importModal.showModal(); importForm.requestSubmit(); };
     const metadata = {
-      os, filename: file.name, storage_path: path, public_url: publicUrl(path), file_size: file.size,
-      area, sala: fields.get('sala').trim(), lugar: fields.get('lugar').trim(),
+      os, area, sala: fields.get('sala').trim(), lugar: fields.get('lugar').trim(),
       armado, desarme, total_units: 0,
       event_data: { source: 'external_pdf', ev: { evento: fields.get('evento').trim() } },
     };
-    const saved = await fetch(`${SUPABASE_URL}/rest/v1/${SUPABASE_TABLE}?on_conflict=storage_path`, {
-      method: 'POST',
-      headers: archiveHeaders({ 'Content-Type': 'application/json', Prefer: 'resolution=ignore-duplicates,return=minimal' }),
-      body: JSON.stringify(metadata),
-    });
-    if (!saved.ok) throw new Error('No se pudo registrar la planilla. Volvé a presionar Subir PDF para reintentar.');
-    const scheduled = armado || desarme || importedOrderHasDates(os);
+    await window.DocumentWorkflow.save({ blob: file, filename: file.name, metadata }, importAttempt.job);
     importAttempt = null;
     importModal.close();
     searchEl.value = '';
@@ -825,6 +804,7 @@ async function saveEditedDocument() {
   editSaveEl.disabled = true;
   editSaveEl.textContent = file ? 'REEMPLAZANDO PDF...' : 'GUARDANDO...';
   setStatus(`Actualizando ${doc.filename}...`);
+  window.AppUI.status('edicion', 'saving', 'Guardando cambios de la planilla…');
 
   try {
     const filePayload = await replacePdfObject(doc, file);
@@ -847,6 +827,7 @@ async function saveEditedDocument() {
     updateStats();
     render();
     setStatus(file ? `Planilla editada y PDF reemplazado: ${doc.filename}` : `Planilla editada: ${doc.filename}`);
+    window.AppUI.status('edicion', 'saved', 'Cambios de la planilla guardados online.');
   } catch (error) {
     console.error('No se pudo editar la planilla:', error);
     const message = String(error.message || error);
@@ -854,6 +835,7 @@ async function saveEditedDocument() {
       ? 'No se pudo guardar. Ejecutá primero supabase-enable-pdf-edit.sql en Supabase.'
       : `No se pudo guardar: ${message}`;
     setEditError(hint);
+    window.AppUI.status('edicion', 'error', 'No se guardaron los cambios. Revisá la ventana de edición.');
     setStatus('No se pudo editar la planilla.', true);
     editSaveEl.disabled = false;
     editSaveEl.textContent = 'REINTENTAR';
@@ -969,6 +951,8 @@ function updateStats() {
 }
 
 async function loadDocuments() {
+  await window.AppAccess.ready;
+  window.AppUI.status('archivo', 'saving', 'Actualizando el archivo compartido…');
   setStatus('Actualizando archivo online…');
   document.getElementById('refresh').disabled = true;
   try {
@@ -984,15 +968,20 @@ async function loadDocuments() {
     }
     if (!res.ok) throw new Error(await res.text());
     documents = await res.json();
+    try { localStorage.setItem(window.AppAccess.isFull() ? 'cr_archivo_full' : 'cr_archivo_consulta', JSON.stringify(documents)); } catch (error) {}
     await loadDepositChecklists();
     updateStats();
     render();
+    window.AppUI.status('archivo', 'saved', 'Archivo actualizado desde el registro compartido.');
   } catch (error) {
     console.error('No se pudo cargar el archivo PDF:', error);
-    documents = [];
+    if (!documents.length) {
+      try { documents = JSON.parse(localStorage.getItem(window.AppAccess.isFull() ? 'cr_archivo_full' : 'cr_archivo_consulta') || '[]'); } catch (storageError) { documents = []; }
+    }
     updateStats();
     render();
-    setStatus('No se pudo abrir el archivo. Ejecutá supabase-setup.sql en el proyecto Supabase.', true);
+    setStatus('No se pudo actualizar el archivo. Se muestra la última copia disponible.', true);
+    window.AppUI.status('archivo', 'offline', 'No se pudo actualizar el archivo compartido. Se muestra la copia disponible.', loadDocuments);
   } finally {
     document.getElementById('refresh').disabled = false;
   }

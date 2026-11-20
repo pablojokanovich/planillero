@@ -86,8 +86,9 @@
         const rollover = validTime(stop.eta) && validTime(previousTime) && stop.eta < previousTime ? 1 : 0;
         currentDay = shiftDate(currentDay, rollover + (stop.extraDays || 0));
         if (validTime(stop.eta)) previousTime = stop.eta;
+        const events = stopEvents(stop);
         return { destination: stop.destination.trim(), address: (stop.address || '').trim(), eta: combine(currentDay, stop.eta),
-          ...(stop.event?.key ? { event: { key: stop.event.key, order: stop.event.order || '', name: stop.event.name || '' } } : {}) };
+          ...(events.length ? { event: events[0], events } : {}) };
       })
     };
   }
@@ -99,7 +100,7 @@
       const order = normalizeOrder(doc.os || saved.ev?.os);
       const validOrder = order && !['—', '-', 'SIN OS', 'SINOS'].includes(order.toUpperCase());
       const key = validOrder ? `os:${order.toUpperCase()}` : `event:${saved.event_id || doc.id}`;
-      if (!groups.has(key)) groups.set(key, { key, order: validOrder ? order : '', name: '', start: '', end: '', places: new Set(), areas: new Set(), documents: [] });
+      if (!groups.has(key)) groups.set(key, { key, order: validOrder ? order : '', name: '', start: '', end: '', places: new Set(), areas: new Set(), documents: [], remitos: [] });
       const group = groups.get(key);
       if (!group.name) group.name = String(saved.ev?.evento || '').replace(/^—$/, '').trim();
       if (!group.start) group.start = isoDate(doc.armado) || isoDate(saved.ev?.armado);
@@ -107,8 +108,11 @@
       const place = String(doc.lugar || saved.ev?.lugar || '').trim();
       if (place && place !== '—') group.places.add(place);
       const area = String(doc.area || '').trim().toLocaleUpperCase('es');
-      if (area && !['—', '-'].includes(area)) group.areas.add(area);
-      group.documents.push(doc);
+      if (saved.document_type === 'remito') group.remitos.push(doc);
+      else {
+        if (area && !['—', '-'].includes(area)) group.areas.add(area);
+        group.documents.push(doc);
+      }
     }
     return [...groups.values()].map(group => ({ ...group, places: [...group.places], areas: [...group.areas].sort((a, b) => {
       const order = ['CCTV', 'SONIDO', 'VIDEO', 'LUCES', 'TARIMAS'];
@@ -124,9 +128,13 @@
     return Boolean(start && day >= start && day <= end);
   }
 
+  function stopEvents(stop) {
+    const events = Array.isArray(stop.events) ? stop.events : [stop.event];
+    return [...new Map(events.filter(event => typeof event?.key === 'string' && event.key)
+      .map(event => [event.key, { key: event.key, order: event.order || '', name: event.name || '' }])).values()];
+  }
   function linkedEvents(row) {
-    return [...new Map((row.stops || []).filter(stop => typeof stop.event?.key === 'string' && stop.event.key)
-      .map(stop => [stop.event.key, stop.event])).values()];
+    return [...new Map((row.stops || []).flatMap(stopEvents).map(event => [event.key, event])).values()];
   }
   function eventLabel(event) {
     return [event.order ? `OS ${event.order}` : '', event.name || 'Evento sin nombre'].filter(Boolean).join(' · ');
@@ -157,8 +165,10 @@
       const res = await fetch(`${config.SUPABASE_URL}/rest/v1/${path}`, { ...options, signal: controller.signal,
         headers: { apikey: config.SUPABASE_KEY, Authorization: `Bearer ${config.SUPABASE_KEY}`, ...options.headers } });
       if (!res.ok) {
+        const details = await res.json().catch(() => ({}));
         const error = new Error(`No se pudo conectar (${res.status}).`);
         error.status = res.status;
+        error.code = details.code;
         throw error;
       }
       return res.status === 204 ? null : await res.json();
@@ -205,6 +215,7 @@
       try { cached = JSON.parse(storage.getItem(this.key)); } catch (error) {}
       this.state = { rows: Array.isArray(cached?.rows) ? cached.rows : [], pending: cached?.pending || {} };
       this.online = false;
+      this.error = null;
     }
     persist() { this.storage.setItem(this.key, JSON.stringify(this.state)); }
     serial(task) {
@@ -229,7 +240,7 @@
       try {
         if (this.readOnly) {
           this.state.rows = (await fetchAll('app_calendar_departures', '*', 'departure_at.asc,id.asc')).map(row => ({ ...row, driver: row.driver || '', notes: '' }));
-          this.persist(); this.online = true;
+          this.persist(); this.online = true; this.error = null;
           return this.rows();
         }
         // Keep local changes until the server has acknowledged each one.
@@ -241,7 +252,8 @@
         this.state.rows = await fetchAll(table, '*', this.order);
         this.persist();
         this.online = true;
-      } catch (error) { this.online = false; }
+        this.error = null;
+      } catch (error) { this.online = false; this.error = error; }
       return this.rows();
     }
   }
@@ -266,7 +278,7 @@
       return this.put({ id: `${kind}-${nameKey(name)}`, kind, name, address: kind === 'destination' ? address.trim() : '', deleted: false, updated_at: new Date().toISOString() });
     }
   }
-  const api = { TRUCKS, CATALOG_DEFAULTS, nameKey, snapshot, isoDate, today, dateLabel, dateTimeLabel, escapeHTML, icon, icons, uuid, normalizeOrder, dayDifference, calendarDays, departureSchedule, groupEvents, eventOnDay, linkedEvents, eventLabel, validateDeparture, fetchEventDocuments, pdfUrl, DepartureStore, CatalogStore };
+  const api = { TRUCKS, CATALOG_DEFAULTS, nameKey, snapshot, isoDate, today, dateLabel, dateTimeLabel, escapeHTML, icon, icons, uuid, normalizeOrder, dayDifference, calendarDays, departureSchedule, groupEvents, eventOnDay, stopEvents, linkedEvents, eventLabel, validateDeparture, fetchEventDocuments, pdfUrl, DepartureStore, CatalogStore };
   root.Logistics = api;
   if (typeof module !== 'undefined') module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

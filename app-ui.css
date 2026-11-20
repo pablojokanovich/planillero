@@ -1,0 +1,37 @@
+body .btn, body .primary, body .confirm, body .cancel, body .dialog-footer button,
+body .modal-actions button, body .heading-actions > button:not(.icon-button), body #refresh,
+body #import-open, body .open-planner-btn, body .btn-primary, body .btn-sec,
+body .btn-generar-all, body .btn-wa, body .btn-jpg, body .btn-copy-txt, body .button {
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 5px;
+  font-family: 'IBM Plex Sans', Arial, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: .2px;
+}
+body .primary, body .confirm { background: #e8000a; border-color: #e8000a; color: #fff; }
+body .cancel { background: #222; border: 1px solid #555; color: #fff; }
+body .dialog-footer, body .modal-actions { gap: 10px; justify-content: flex-end; flex-wrap: wrap; }
+body .dialog-footer > :first-child, body .modal-actions > .cancel { margin-right: auto; }
+body dialog, body .edit-modal, body .delete-modal, body .modal-box { border-radius: 6px; border: 1px solid #555; border-top: 3px solid #e8000a; background: #161616; color: #f2f2f2; }
+body dialog::backdrop { background: #000b; }
+body dialog h2, body .edit-modal h2, body .delete-modal h2, body .modal-title { font-family: 'IBM Plex Sans', Arial, sans-serif; font-size: 21px; letter-spacing: 0; }
+.app-save-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 14px; margin: 0 0 20px; border: 1px solid #4a6653; border-left-width: 4px; border-radius: 5px; background: #17221b; color: #d0ebd8; font: 13px/1.45 'IBM Plex Sans', Arial, sans-serif; }
+.app-save-status[data-state="local"], .app-save-status[data-state="pending"], .app-save-status[data-state="offline"] { background: #292419; color: #f0dbad; border-color: #9e8652; }
+.app-save-status[data-state="saving"] { background: #1a2630; color: #c5e2f5; border-color: #658fa9; }
+.app-save-status[data-state="error"] { background: #321c1e; color: #ffc7cb; border-color: #bf6970; }
+.app-save-status button { flex-shrink: 0; min-height: 36px; border: 1px solid currentColor; border-radius: 4px; color: inherit; background: transparent; padding: 6px 10px; font: inherit; cursor: pointer; }
+.app-duplicate-dialog { width: min(650px, calc(100% - 24px)); padding: 22px; max-height: 90vh; }
+.app-duplicate-dialog h2 { margin: 0 0 20px; }
+.app-duplicate-dialog label { display: grid; gap: 8px; margin-bottom: 22px; }
+.app-duplicate-dialog select { width: 100%; min-width: 0; min-height: 44px; background: #222; color: #fff; border: 1px solid #555; padding: 8px; }
+.app-duplicate-dialog .dialog-footer { padding: 16px 0 0; }
+.event-search-results { display: grid; gap: 8px; margin-bottom: 20px; }
+.event-search-results[hidden] { display: none; }
+.event-search-result { width: 100%; display: flex; justify-content: space-between; gap: 12px; text-align: left; padding: 12px; }
+.event-search-result span { overflow-wrap: anywhere; }
+.event-bulto { padding: 10px 12px; border: 1px solid #444; border-radius: 4px; margin: 8px 0; }
+.event-bulto ul { margin: 6px 0; padding-left: 20px; }
+@media (max-width: 520px) { .app-save-status { align-items: flex-start; flex-wrap: wrap; } .event-search-result { flex-direction: column; gap: 4px; } }
+@media print { .app-save-status { display: none !important; } }
